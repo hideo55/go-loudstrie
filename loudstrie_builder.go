@@ -1,9 +1,7 @@
 package loudstrie
 
 import (
-	"bytes"
 	"sort"
-	"unsafe"
 
 	"github.com/hideo55/go-sbvector"
 	"github.com/oleiade/lane"
@@ -70,7 +68,7 @@ func (builder *LoudsTrieBuilderData) Build(keyList []string, useTailTrie bool) (
 		rn := (q.Dequeue()).(rangeNode)
 		left := rn.left
 		right := rn.right
-		cur := *(*[]byte)(unsafe.Pointer(&keyList[left]))
+		cur := keyList[left]
 		curSize := uint64(len(cur))
 		if left+1 == right && depth+1 < curSize {
 			treeBuilder.PushBack(true)
@@ -95,10 +93,10 @@ func (builder *LoudsTrieBuilderData) Build(keyList []string, useTailTrie bool) (
 		}
 
 		prev := newLeft
-		prevC := (*(*[]byte)(unsafe.Pointer(&keyList[prev])))[depth]
+		prevC := keyList[prev][depth]
 		degree := uint64(0)
 		for i := prev; ; i++ {
-			if i < right && prevC == (*(*[]byte)(unsafe.Pointer(&keyList[i])))[depth] {
+			if i < right && prevC == keyList[i][depth] {
 				continue
 			}
 			trie.edges = append(trie.edges, prevC)
@@ -109,14 +107,14 @@ func (builder *LoudsTrieBuilderData) Build(keyList []string, useTailTrie bool) (
 				break
 			}
 			prev = i
-			prevC = (*(*[]byte)(unsafe.Pointer(&keyList[prev])))[depth]
+			prevC = keyList[prev][depth]
 		}
 		treeBuilder.PushBack(true)
 	}
 
-	treeBuilder.Build(true, true)
-	terminalBuilder.Build(true, false)
-	tailBuilder.Build(false, false)
+	trie.louds, _ = treeBuilder.Build(true, true)
+	trie.terminal, _ =  terminalBuilder.Build(true, false)
+	trie.tailIDs, _ = tailBuilder.Build(false, false)
 
 	if useTailTrie {
 		builder.buildTailTrie()
@@ -128,15 +126,16 @@ func (builder *LoudsTrieBuilderData) Build(keyList []string, useTailTrie bool) (
 func (builder *LoudsTrieBuilderData) buildTailTrie() {
 	origTails := builder.trie.vtails
 	vtailTrieBuilder := NewLoudsTrieBuilder()
-	var keyList []string
-	for _, tail := range origTails {
-		runes := []rune(bytes.NewBuffer(tail).String())
+	keyList := make([]string, len(origTails))
+	for tailIdx, tail := range origTails {
+		runes := []rune(tail)
 		for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
 			runes[i], runes[j] = runes[j], runes[i]
 		}
-		keyList = append(keyList, string(runes))
+		keyList[tailIdx] = string(runes)
 	}
 	tailTrie, _ := vtailTrieBuilder.Build(keyList, false)
+	builder.trie.tailTrie = tailTrie
 	builder.trie.tailIDSize = lg2(tailTrie.GetNumOfKeys())
 	tailIDBuilder := sbvector.NewVectorBuilder()
 	for _, tail := range keyList {
