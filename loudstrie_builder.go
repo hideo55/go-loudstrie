@@ -7,12 +7,19 @@ import (
 	"github.com/oleiade/lane"
 )
 
-type LoudsTrieBuilderData struct {
-	trie *LoudsTrieData
+/*
+TrieBuilderData holds
+*/
+type TrieBuilderData struct {
+	trie *TrieData
 }
 
-type LoudsTrieBuilder interface {
-	Build(keyList []string, useTailTrie bool) (LoudsTrie, error)
+/*
+TrieBuilder is
+*/
+type TrieBuilder interface {
+	Build(keyList []string, useTailTrie bool) (Trie, error)
+	buildTailTrie()
 }
 
 type rangeNode struct {
@@ -20,9 +27,12 @@ type rangeNode struct {
 	right uint64
 }
 
-func NewLoudsTrieBuilder() LoudsTrieBuilder {
-	builder := new(LoudsTrieBuilderData)
-	builder.trie = new(LoudsTrieData)
+/*
+NewTrieBuilder is
+*/
+func NewTrieBuilder() TrieBuilder {
+	builder := &TrieBuilderData{}
+	builder.trie = &TrieData{}
 	return builder
 }
 
@@ -34,7 +44,10 @@ func lg2(x uint64) uint64 {
 	return ret
 }
 
-func (builder *LoudsTrieBuilderData) Build(keyList []string, useTailTrie bool) (LoudsTrie, error) {
+/*
+Build is
+*/
+func (builder *TrieBuilderData) Build(keyList []string, useTailTrie bool) (Trie, error) {
 	trie := builder.trie
 	sort.Strings(keyList)
 	keyList = removeDuplicates(keyList)
@@ -74,10 +87,11 @@ func (builder *LoudsTrieBuilderData) Build(keyList []string, useTailTrie bool) (
 			treeBuilder.PushBack(true)
 			terminalBuilder.PushBack(true)
 			tailBuilder.PushBack(true)
-			tail := cur[depth : curSize-1]
+			tail := cur[depth:curSize]
 			trie.vtails = append(trie.vtails, tail)
+			continue
 		} else {
-			treeBuilder.PushBack(false)
+			tailBuilder.PushBack(false)
 		}
 
 		newLeft := left
@@ -111,10 +125,9 @@ func (builder *LoudsTrieBuilderData) Build(keyList []string, useTailTrie bool) (
 		}
 		treeBuilder.PushBack(true)
 	}
-
 	trie.louds, _ = treeBuilder.Build(true, true)
-	trie.terminal, _ =  terminalBuilder.Build(true, false)
-	trie.tailIDs, _ = tailBuilder.Build(false, false)
+	trie.terminal, _ = terminalBuilder.Build(true, false)
+	trie.tail, _ = tailBuilder.Build(false, false)
 
 	if useTailTrie {
 		builder.buildTailTrie()
@@ -123,9 +136,9 @@ func (builder *LoudsTrieBuilderData) Build(keyList []string, useTailTrie bool) (
 	return trie, nil
 }
 
-func (builder *LoudsTrieBuilderData) buildTailTrie() {
+func (builder *TrieBuilderData) buildTailTrie() {
 	origTails := builder.trie.vtails
-	vtailTrieBuilder := NewLoudsTrieBuilder()
+	vtailTrieBuilder := NewTrieBuilder()
 	keyList := make([]string, len(origTails))
 	for tailIdx, tail := range origTails {
 		runes := []rune(tail)
@@ -134,6 +147,7 @@ func (builder *LoudsTrieBuilderData) buildTailTrie() {
 		}
 		keyList[tailIdx] = string(runes)
 	}
+
 	tailTrie, _ := vtailTrieBuilder.Build(keyList, false)
 	builder.trie.tailTrie = tailTrie
 	builder.trie.tailIDSize = lg2(tailTrie.GetNumOfKeys())
@@ -147,7 +161,7 @@ func (builder *LoudsTrieBuilderData) buildTailTrie() {
 
 func removeDuplicates(a []string) []string {
 	var result []string
-	var seen map[string]bool
+	seen := make(map[string]bool)
 
 	for _, val := range a {
 		if _, ok := seen[val]; !ok {

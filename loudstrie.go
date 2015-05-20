@@ -5,7 +5,10 @@ import (
 	"github.com/hideo55/go-sbvector"
 )
 
-type LoudsTrieData struct {
+/*
+TrieData is
+*/
+type TrieData struct {
 	louds       sbvector.SuccinctBitVector
 	terminal    sbvector.SuccinctBitVector
 	tail        sbvector.SuccinctBitVector
@@ -13,16 +16,19 @@ type LoudsTrieData struct {
 	edges       []byte
 	numOfKeys   uint64
 	hasTailTrie bool
-	tailTrie    LoudsTrie
+	tailTrie    Trie
 	tailIDs     sbvector.SuccinctBitVector
 	tailIDSize  uint64
 }
 
-type LoudsTrie interface {
+/*
+Trie is interface of LOUDS Trie.
+*/
+type Trie interface {
 	ExactMatchSearch(key string) uint64
 	CommonPrefixSearch(key string, res map[uint64]uint64)
 	PredictiveSearch(key string, res map[uint64]uint64)
-	Traverse(key string, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64
+	Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64
 	DecodeKey(id uint64) string
 	GetNumOfKeys() uint64
 }
@@ -34,31 +40,83 @@ const (
 	CanNotTraverse uint64 = 0xFFFFFFFFFFFFFFFE
 )
 
-func (trie *LoudsTrieData) ExactMatchSearch(key string) uint64 {
+/*
+ExactMatchSearch returns
+*/
+func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 	id := uint64(0)
-	return id
+	nodePos := uint64(0)
+	zeros := uint64(0)
+	keyPos := uint64(0)
+	keyLen := uint64(len(key))
+	for keyPos <= keyLen {
+		id = trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
+		if keyPos == keyLen+1 && id != CanNotTraverse {
+			return id
+		}
+	}
+	return NotFound
 }
 
-func (trie *LoudsTrieData) CommonPrefixSearch(key string, res map[uint64]uint64) {
+/*
+CommonPrefixSearch returns
+*/
+func (trie *TrieData) CommonPrefixSearch(key string, res map[uint64]uint64) {
 }
 
-func (trie *LoudsTrieData) PredictiveSearch(key string, res map[uint64]uint64) {
+/*
+PredictiveSearch returns
+*/
+func (trie *TrieData) PredictiveSearch(key string, res map[uint64]uint64) {
 }
 
-func (trie *LoudsTrieData) Traverse(key string, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64 {
+/*
+Traverse is
+*/
+func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64 {
 	id := NotFound
 	if *nodePos == NotFound {
 		return CanNotTraverse
 	}
+	defaultPos := uint64(2)
+	*nodePos = max(*nodePos, defaultPos)
+	*zeros = max(*zeros, defaultPos)
+	ones := *nodePos - *zeros
+
+	hasTail := false
+	if trie.tail.Size() > 0 {
+		hasTail, _ = trie.tail.Get(ones)
+	}
+
+	if hasTail {
+		retLen := uint64(0)
+		tailRank, _ := trie.tail.Rank1(ones)
+		if trie.tailMatch(key, keyLen, *keyPos, tailRank, &retLen) {
+			*keyPos += retLen
+			id, _ = trie.terminal.Rank1(ones)
+		}
+	} else if ok, _ := trie.terminal.Get(ones); ok {
+		id, _ = trie.terminal.Rank1(ones)
+	}
+
+	if *keyPos < keyLen {
+		trie.getChild(key[*keyPos], nodePos, zeros)
+	}
+
+	*keyPos++
+	if id == NotFound && *nodePos == NotFound {
+		return CanNotTraverse
+	}
+
 	return id
 }
 
-func (trie *LoudsTrieData) isLeaf(pos uint64) bool {
+func (trie *TrieData) isLeaf(pos uint64) bool {
 	val, _ := trie.louds.Get(pos)
 	return val
 }
 
-func (trie *LoudsTrieData) getParent(c *byte, pos *uint64, zeros *uint64) {
+func (trie *TrieData) getParent(c *byte, pos *uint64, zeros *uint64) {
 	*zeros = *pos - *zeros + uint64(1)
 	*pos, _ = trie.louds.Select0(*zeros - uint64(1))
 	if *zeros < uint64(2) {
@@ -67,7 +125,7 @@ func (trie *LoudsTrieData) getParent(c *byte, pos *uint64, zeros *uint64) {
 	*c = trie.edges[*zeros-uint64(2)]
 }
 
-func (trie *LoudsTrieData) getChild(c byte, pos *uint64, zeros *uint64) {
+func (trie *TrieData) getChild(c byte, pos *uint64, zeros *uint64) {
 	for {
 		if trie.isLeaf(*pos) {
 			*pos = NotFound
@@ -84,7 +142,7 @@ func (trie *LoudsTrieData) getChild(c byte, pos *uint64, zeros *uint64) {
 	}
 }
 
-func (trie *LoudsTrieData) enumerateAll(pos uint64, zeros uint64, retIDs []uint64, limit uint64) {
+func (trie *TrieData) enumerateAll(pos uint64, zeros uint64, retIDs []uint64, limit uint64) {
 	ones := pos - zeros
 	term, _ := trie.terminal.Get(ones)
 	if term {
@@ -101,7 +159,7 @@ func (trie *LoudsTrieData) enumerateAll(pos uint64, zeros uint64, retIDs []uint6
 	}
 }
 
-func (trie *LoudsTrieData) tailMatch(str string, strlen uint64, depth uint64, tailID uint64, retLen *uint64) bool {
+func (trie *TrieData) tailMatch(str string, strlen uint64, depth uint64, tailID uint64, retLen *uint64) bool {
 	tail := trie.getTail(tailID)
 	tailLen := uint64(len(tail))
 	if tailLen > (strlen - depth) {
@@ -116,7 +174,7 @@ func (trie *LoudsTrieData) tailMatch(str string, strlen uint64, depth uint64, ta
 	return true
 }
 
-func (trie *LoudsTrieData) getTail(tailID uint64) string {
+func (trie *TrieData) getTail(tailID uint64) string {
 	if trie.hasTailTrie {
 		id, _ := trie.tailIDs.GetBits(trie.tailIDSize*tailID, trie.tailIDSize)
 		tail := trie.tailTrie.DecodeKey(id)
@@ -125,12 +183,14 @@ func (trie *LoudsTrieData) getTail(tailID uint64) string {
 			runes[i], runes[j] = runes[j], runes[i]
 		}
 		return string(runes)
-	} else {
-		return trie.vtails[tailID]
 	}
+	return trie.vtails[tailID]
 }
 
-func (trie *LoudsTrieData) DecodeKey(id uint64) string {
+/*
+DecodeKey returns
+*/
+func (trie *TrieData) DecodeKey(id uint64) string {
 	nodeID, _ := trie.terminal.Select1(id)
 	pos, _ := trie.louds.Select1(nodeID)
 	pos++
@@ -148,6 +208,16 @@ func (trie *LoudsTrieData) DecodeKey(id uint64) string {
 	return key
 }
 
-func (trie *LoudsTrieData) GetNumOfKeys() uint64 {
+/*
+GetNumOfKeys returns number of keys in trie.
+*/
+func (trie *TrieData) GetNumOfKeys() uint64 {
 	return trie.numOfKeys
+}
+
+func max(x uint64, y uint64) uint64 {
+	if x < y {
+		return y
+	}
+	return x
 }
