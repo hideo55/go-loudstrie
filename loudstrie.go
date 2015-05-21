@@ -2,6 +2,7 @@ package loudstrie
 
 import (
 	"bytes"
+
 	"github.com/hideo55/go-sbvector"
 )
 
@@ -22,12 +23,20 @@ type TrieData struct {
 }
 
 /*
+Result holds result of common-prefix search.
+*/
+type Result struct {
+	ID    uint64
+	Depth uint64
+}
+
+/*
 Trie is interface of LOUDS Trie.
 */
 type Trie interface {
 	ExactMatchSearch(key string) uint64
-	CommonPrefixSearch(key string, res map[uint64]uint64)
-	PredictiveSearch(key string, res map[uint64]uint64)
+	CommonPrefixSearch(key string, res []Result, limit uint64)
+	PredictiveSearch(key string, res []uint64, limit uint64)
 	Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64
 	DecodeKey(id uint64) string
 	GetNumOfKeys() uint64
@@ -61,13 +70,55 @@ func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 /*
 CommonPrefixSearch returns
 */
-func (trie *TrieData) CommonPrefixSearch(key string, res map[uint64]uint64) {
+func (trie *TrieData) CommonPrefixSearch(key string, res []Result, limit uint64) {
+	nodePos := uint64(0)
+	zeros := uint64(0)
+	keyPos := uint64(0)
+	keyLen := uint64(len(key))
+	for {
+		id := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
+		if id == CanNotTraverse {
+			break
+		}
+		if id != NotFound {
+			res = append(res, Result{id, keyPos - 1})
+			if limit != 0 && uint64(len(res)) == limit {
+				break
+			}
+		}
+	}
 }
 
 /*
 PredictiveSearch returns
 */
-func (trie *TrieData) PredictiveSearch(key string, res map[uint64]uint64) {
+func (trie *TrieData) PredictiveSearch(key string, res []uint64, limit uint64) {
+	if limit == 0 {
+		return
+	}
+	pos := uint64(2)
+	zeros := uint64(2)
+	keyLen := uint64(len(key))
+	for i := uint64(0); i < keyLen; i++ {
+		ones := pos - zeros
+		if ok, _ := trie.tail.Get(ones); ok {
+			tailID, _ := trie.tail.Rank1(ones)
+			tail := trie.getTail(tailID)
+			for j := i; j < keyLen; j++ {
+				if key[j] != tail[j-i] {
+					return
+				}
+				id, _ := trie.terminal.Rank1(ones)
+				res = append(res, id)
+				return
+			}
+		}
+		trie.getChild(key[i], &pos, &zeros)
+		if pos == NotFound {
+			return
+		}
+	}
+	trie.enumerateAll(pos, zeros, res, limit)
 }
 
 /*
