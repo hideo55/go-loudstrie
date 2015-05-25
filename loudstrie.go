@@ -35,8 +35,8 @@ Trie is interface of LOUDS Trie.
 */
 type Trie interface {
 	ExactMatchSearch(key string) uint64
-	CommonPrefixSearch(key string, res []Result, limit uint64)
-	PredictiveSearch(key string, res []uint64, limit uint64)
+	CommonPrefixSearch(key string, res *[]Result, limit uint64)
+	PredictiveSearch(key string, res *[]uint64, limit uint64)
 	Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64
 	DecodeKey(id uint64) string
 	GetNumOfKeys() uint64
@@ -70,19 +70,24 @@ func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 /*
 CommonPrefixSearch returns
 */
-func (trie *TrieData) CommonPrefixSearch(key string, res []Result, limit uint64) {
+func (trie *TrieData) CommonPrefixSearch(key string, res *[]Result, limit uint64) {
 	nodePos := uint64(0)
 	zeros := uint64(0)
 	keyPos := uint64(0)
 	keyLen := uint64(len(key))
+
+	if limit == 0 {
+		return
+	}
+
 	for {
 		id := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
 		if id == CanNotTraverse {
 			break
 		}
 		if id != NotFound {
-			res = append(res, Result{id, keyPos - 1})
-			if limit != 0 && uint64(len(res)) == limit {
+			*res = append(*res, Result{id, keyPos - 1})
+			if uint64(len(*res)) == limit {
 				break
 			}
 		}
@@ -92,7 +97,7 @@ func (trie *TrieData) CommonPrefixSearch(key string, res []Result, limit uint64)
 /*
 PredictiveSearch returns
 */
-func (trie *TrieData) PredictiveSearch(key string, res []uint64, limit uint64) {
+func (trie *TrieData) PredictiveSearch(key string, res *[]uint64, limit uint64) {
 	if limit == 0 {
 		return
 	}
@@ -109,7 +114,7 @@ func (trie *TrieData) PredictiveSearch(key string, res []uint64, limit uint64) {
 					return
 				}
 				id, _ := trie.terminal.Rank1(ones)
-				res = append(res, id)
+				*res = append(*res, id)
 				return
 			}
 		}
@@ -133,12 +138,7 @@ func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros
 	*nodePos = max(*nodePos, defaultPos)
 	*zeros = max(*zeros, defaultPos)
 	ones := *nodePos - *zeros
-
-	hasTail := false
-	if trie.tail.Size() > 0 {
-		hasTail, _ = trie.tail.Get(ones)
-	}
-
+	hasTail, _ := trie.tail.Get(ones)
 	if hasTail {
 		retLen := uint64(0)
 		tailRank, _ := trie.tail.Rank1(ones)
@@ -152,6 +152,8 @@ func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros
 
 	if *keyPos < keyLen {
 		trie.getChild(key[*keyPos], nodePos, zeros)
+	} else {
+		*nodePos = NotFound
 	}
 
 	*keyPos++
@@ -193,14 +195,14 @@ func (trie *TrieData) getChild(c byte, pos *uint64, zeros *uint64) {
 	}
 }
 
-func (trie *TrieData) enumerateAll(pos uint64, zeros uint64, retIDs []uint64, limit uint64) {
+func (trie *TrieData) enumerateAll(pos uint64, zeros uint64, retIDs *[]uint64, limit uint64) {
 	ones := pos - zeros
 	term, _ := trie.terminal.Get(ones)
 	if term {
 		rank, _ := trie.terminal.Rank1(ones)
-		retIDs = append(retIDs, rank)
+		*retIDs = append(*retIDs, rank)
 	}
-	for i := uint64(0); uint64(len(retIDs)) < limit; i++ {
+	for i := uint64(0); uint64(len(*retIDs)) < limit; i++ {
 		if ok, _ := trie.louds.Get(pos + i); !ok {
 			break
 		}
@@ -256,6 +258,13 @@ func (trie *TrieData) DecodeKey(id uint64) string {
 		keyBuf = append([]byte{c}, keyBuf...)
 	}
 	key := bytes.NewBuffer(keyBuf).String()
+	hasTail, _ := trie.tail.Get(nodeID)
+	if hasTail {
+		rank, _ := trie.tail.Rank1(nodeID)
+		tailStr := trie.getTail(rank)
+		key += tailStr
+	}
+
 	return key
 }
 
