@@ -36,7 +36,7 @@ Trie is interface of LOUDS Trie.
 type Trie interface {
 	ExactMatchSearch(key string) uint64
 	CommonPrefixSearch(key string, res *[]Result, limit uint64)
-	PredictiveSearch(key string, res *[]uint64, limit uint64)
+	PredictiveSearch(key string, res *[]Result, limit uint64)
 	Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64
 	DecodeKey(id uint64) string
 	GetNumOfKeys() uint64
@@ -97,7 +97,7 @@ func (trie *TrieData) CommonPrefixSearch(key string, res *[]Result, limit uint64
 /*
 PredictiveSearch returns
 */
-func (trie *TrieData) PredictiveSearch(key string, res *[]uint64, limit uint64) {
+func (trie *TrieData) PredictiveSearch(key string, res *[]Result, limit uint64) {
 	if limit == 0 {
 		return
 	}
@@ -113,10 +113,10 @@ func (trie *TrieData) PredictiveSearch(key string, res *[]uint64, limit uint64) 
 				if key[j] != tail[j-i] {
 					return
 				}
-				id, _ := trie.terminal.Rank1(ones)
-				*res = append(*res, id)
-				return
 			}
+			id, _ := trie.terminal.Rank1(ones)
+			*res = append(*res, Result{id, keyLen - 1})
+			return
 		}
 		trie.getChild(key[i], &pos, &zeros)
 		if pos == NotFound {
@@ -195,20 +195,20 @@ func (trie *TrieData) getChild(c byte, pos *uint64, zeros *uint64) {
 	}
 }
 
-func (trie *TrieData) enumerateAll(pos uint64, zeros uint64, retIDs *[]uint64, limit uint64) {
+func (trie *TrieData) enumerateAll(pos uint64, zeros uint64, res *[]Result, limit uint64) {
 	ones := pos - zeros
 	term, _ := trie.terminal.Get(ones)
 	if term {
 		rank, _ := trie.terminal.Rank1(ones)
-		*retIDs = append(*retIDs, rank)
+		*res = append(*res, Result{rank, pos})
 	}
-	for i := uint64(0); uint64(len(*retIDs)) < limit; i++ {
-		if ok, _ := trie.louds.Get(pos + i); !ok {
+	for i := uint64(0); uint64(len(*res)) < limit; i++ {
+		if ok, _ := trie.louds.Get(pos + i); ok {
 			break
 		}
-		nextPos, _ := trie.louds.Select1(zeros + 1 - uint64(1))
+		nextPos, _ := trie.louds.Select1(zeros + i - uint64(1))
 		nextPos++
-		trie.enumerateAll(nextPos, nextPos-zeros-i+uint64(1), retIDs, limit)
+		trie.enumerateAll(nextPos, nextPos - zeros - i + uint64(1), res, limit)
 	}
 }
 

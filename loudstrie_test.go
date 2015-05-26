@@ -36,7 +36,7 @@ func TestExactMatchSearch(t *testing.T) {
 		id := trie.ExactMatchSearch(key)
 		decode := trie.DecodeKey(id)
 		if key != decode {
-			t.Error(decode)
+			t.Error("Expected", key, "got", decode)
 		}
 	}
 }
@@ -65,4 +65,21 @@ func TestCommonPrefixSearch(t *testing.T) {
 		t.Error(str)
 	}
 
+}
+
+func TestPredictiveSearch(t *testing.T) {
+	builder := NewTrieBuilder()
+	keyList := []string{
+		"bbc",
+		"able",
+		"abc",
+		"abcde",
+		"can",
+	}
+	trie, _ := builder.Build(keyList, true)
+	results := make([]Result, 0)
+	trie.PredictiveSearch("ab", &results, 100)
+	if len(results) != 3 {
+		t.Error(len(results))
+	}
 }
