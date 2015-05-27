@@ -1,3 +1,23 @@
+/*
+Package loudstrie is implementation of LOUDS(Level-Order Unary Degree Sequence) Trie.
+
+Synopsis
+	import (
+			"github.com/hideo55/go-loudstrie"
+	)
+
+	func example() {
+		builder := loudstrie.NewTrieBuilder()
+		keyList := []string{
+			"bbc",
+			"able",
+			"abc",
+			"abcde",
+			"can",
+		}
+		trie, err := builder.Build(keyList, false)
+	}
+*/
 package loudstrie
 
 import (

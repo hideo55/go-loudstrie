@@ -8,14 +8,14 @@ import (
 )
 
 /*
-TrieBuilderData holds
+TrieBuilderData holds information of LOUDS Trie Builder
 */
 type TrieBuilderData struct {
 	trie *TrieData
 }
 
 /*
-TrieBuilder is
+TrieBuilder is interface of LOUDS Trie Builder
 */
 type TrieBuilder interface {
 	Build(keyList []string, useTailTrie bool) (Trie, error)
@@ -28,7 +28,7 @@ type rangeNode struct {
 }
 
 /*
-NewTrieBuilder is
+NewTrieBuilder returns new LOUDS Trie Builder
 */
 func NewTrieBuilder() TrieBuilder {
 	builder := &TrieBuilderData{}
@@ -45,7 +45,8 @@ func lg2(x uint64) uint64 {
 }
 
 /*
-Build is
+Build builds LOUDS Trie from keyList.
+If useTailTrie is true, compress TAIL array.
 */
 func (builder *TrieBuilderData) Build(keyList []string, useTailTrie bool) (Trie, error) {
 	trie := builder.trie
