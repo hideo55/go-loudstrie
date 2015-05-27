@@ -153,6 +153,8 @@ func (builder *TrieBuilderData) buildTailTrie() {
 		tailIDBuilder.PushBackBits(id, builder.trie.tailIDSize)
 	}
 	builder.trie.tailIDs, _ = tailIDBuilder.Build(false, false)
+	builder.trie.hasTailTrie = true
+	builder.trie.vtails = make([]string, 0)
 }
 
 func removeDuplicates(a []string) []string {
