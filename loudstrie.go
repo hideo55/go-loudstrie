@@ -7,7 +7,7 @@ import (
 )
 
 /*
-TrieData is
+TrieData holds information of LOUDS Trie
 */
 type TrieData struct {
 	louds       sbvector.SuccinctBitVector
@@ -23,7 +23,7 @@ type TrieData struct {
 }
 
 /*
-Result holds result of common-prefix search.
+Result holds result of common-prefix/predictive search.
 */
 type Result struct {
 	ID    uint64
@@ -50,7 +50,7 @@ const (
 )
 
 /*
-ExactMatchSearch returns
+ExactMatchSearch looks up key exact match with query string
 */
 func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 	id := uint64(0)
@@ -68,7 +68,7 @@ func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 }
 
 /*
-CommonPrefixSearch returns
+CommonPrefixSearch looks up keys from the possible prefixes of a query string
 */
 func (trie *TrieData) CommonPrefixSearch(key string, res *[]Result, limit uint64) {
 	nodePos := uint64(0)
@@ -95,7 +95,7 @@ func (trie *TrieData) CommonPrefixSearch(key string, res *[]Result, limit uint64
 }
 
 /*
-PredictiveSearch returns
+PredictiveSearch searches keys starting with a query string
 */
 func (trie *TrieData) PredictiveSearch(key string, res *[]Result, limit uint64) {
 	if limit == 0 {
@@ -127,7 +127,7 @@ func (trie *TrieData) PredictiveSearch(key string, res *[]Result, limit uint64) 
 }
 
 /*
-Traverse is
+Traverse the node of the trie
 */
 func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64 {
 	id := NotFound
@@ -208,7 +208,7 @@ func (trie *TrieData) enumerateAll(pos uint64, zeros uint64, res *[]Result, limi
 		}
 		nextPos, _ := trie.louds.Select1(zeros + i - uint64(1))
 		nextPos++
-		trie.enumerateAll(nextPos, nextPos - zeros - i + uint64(1), res, limit)
+		trie.enumerateAll(nextPos, nextPos-zeros-i+uint64(1), res, limit)
 	}
 }
 
@@ -241,7 +241,7 @@ func (trie *TrieData) getTail(tailID uint64) string {
 }
 
 /*
-DecodeKey returns
+DecodeKey returns key string corresponding to the ID
 */
 func (trie *TrieData) DecodeKey(id uint64) string {
 	nodeID, _ := trie.terminal.Select1(id)
