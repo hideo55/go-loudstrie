@@ -51,8 +51,7 @@ func TestCommonPrefixSearch(t *testing.T) {
 		"can",
 	}
 	trie, _ := builder.Build(keyList, true)
-	results := make([]Result, 0)
-	trie.CommonPrefixSearch("abcde", &results, 100)
+	results := trie.CommonPrefixSearch("abcde", 0)
 	if len(results) != 2 {
 		t.Error(results)
 	}
@@ -77,9 +76,9 @@ func TestPredictiveSearch(t *testing.T) {
 		"can",
 	}
 	trie, _ := builder.Build(keyList, true)
-	results := make([]Result, 0)
-	trie.PredictiveSearch("ab", &results, 100)
+	results := trie.PredictiveSearch("ab", 0)
 	if len(results) != 3 {
 		t.Error(len(results))
 	}
 }
+

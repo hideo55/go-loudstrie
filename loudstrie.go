@@ -16,6 +16,8 @@ Synopsis
 			"can",
 		}
 		trie, err := builder.Build(keyList, false)
+
+		res := trie.CommonPrefixSearch()
 	}
 */
 package loudstrie
@@ -27,7 +29,7 @@ import (
 )
 
 /*
-TrieData holds information of LOUDS Trie
+TrieData holds information of LOUDS Trie.
 */
 type TrieData struct {
 	louds       sbvector.SuccinctBitVector
@@ -43,7 +45,7 @@ type TrieData struct {
 }
 
 /*
-Result holds result of common-prefix/predictive search.
+Result holds result of common-prefix search.
 */
 type Result struct {
 	ID    uint64
@@ -55,8 +57,8 @@ Trie is interface of LOUDS Trie.
 */
 type Trie interface {
 	ExactMatchSearch(key string) uint64
-	CommonPrefixSearch(key string, res *[]Result, limit uint64)
-	PredictiveSearch(key string, res *[]Result, limit uint64)
+	CommonPrefixSearch(key string, limit uint64) []Result
+	PredictiveSearch(key string, limit uint64) []uint64
 	Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64
 	DecodeKey(id uint64) string
 	GetNumOfKeys() uint64
@@ -65,12 +67,14 @@ type Trie interface {
 const (
 	// NotFound indicates `value is not found`
 	NotFound uint64 = 0xFFFFFFFFFFFFFFFF
-	// CanNotTraverse indicate `subsequent node is not found`
+	// CanNotTraverse indicates `subsequent node is not found`
 	CanNotTraverse uint64 = 0xFFFFFFFFFFFFFFFE
+	// NoLimit indicates `Doesn't limit number of results`
+	NoLimit uint64 = 0xFFFFFFFFFFFFFFFF
 )
 
 /*
-ExactMatchSearch looks up key exact match with query string
+ExactMatchSearch looks up key exact match with query string.
 */
 func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 	id := uint64(0)
@@ -88,16 +92,16 @@ func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 }
 
 /*
-CommonPrefixSearch looks up keys from the possible prefixes of a query string
+CommonPrefixSearch looks up keys from the possible prefixes of a query string.
 */
-func (trie *TrieData) CommonPrefixSearch(key string, res *[]Result, limit uint64) {
+func (trie *TrieData) CommonPrefixSearch(key string, limit uint64) []Result {
 	nodePos := uint64(0)
 	zeros := uint64(0)
 	keyPos := uint64(0)
 	keyLen := uint64(len(key))
-
+	res := make([]Result, 0)
 	if limit == 0 {
-		return
+		limit = NoLimit
 	}
 
 	for {
@@ -106,20 +110,22 @@ func (trie *TrieData) CommonPrefixSearch(key string, res *[]Result, limit uint64
 			break
 		}
 		if id != NotFound {
-			*res = append(*res, Result{id, keyPos - 1})
-			if uint64(len(*res)) == limit {
+			res = append(res, Result{id, keyPos - 1})
+			if uint64(len(res)) == limit {
 				break
 			}
 		}
 	}
+	return res
 }
 
 /*
-PredictiveSearch searches keys starting with a query string
+PredictiveSearch searches keys starting with a query string.
 */
-func (trie *TrieData) PredictiveSearch(key string, res *[]Result, limit uint64) {
+func (trie *TrieData) PredictiveSearch(key string, limit uint64) []uint64 {
+	res := make([]uint64, 0)
 	if limit == 0 {
-		return
+		limit = NoLimit
 	}
 	pos := uint64(2)
 	zeros := uint64(2)
@@ -131,23 +137,24 @@ func (trie *TrieData) PredictiveSearch(key string, res *[]Result, limit uint64) 
 			tail := trie.getTail(tailID)
 			for j := i; j < keyLen; j++ {
 				if key[j] != tail[j-i] {
-					return
+					return res
 				}
 			}
 			id, _ := trie.terminal.Rank1(ones)
-			*res = append(*res, Result{id, keyLen - 1})
-			return
+			res = append(res, id)
+			return res
 		}
 		trie.getChild(key[i], &pos, &zeros)
 		if pos == NotFound {
-			return
+			return res
 		}
 	}
-	trie.enumerateAll(pos, zeros, res, limit)
+	trie.enumerateAll(pos, zeros, &res, limit)
+	return res
 }
 
 /*
-Traverse the node of the trie
+Traverse the node of the trie.
 */
 func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64 {
 	id := NotFound
@@ -215,12 +222,12 @@ func (trie *TrieData) getChild(c byte, pos *uint64, zeros *uint64) {
 	}
 }
 
-func (trie *TrieData) enumerateAll(pos uint64, zeros uint64, res *[]Result, limit uint64) {
+func (trie *TrieData) enumerateAll(pos uint64, zeros uint64, res *[]uint64, limit uint64) {
 	ones := pos - zeros
 	term, _ := trie.terminal.Get(ones)
 	if term {
 		rank, _ := trie.terminal.Rank1(ones)
-		*res = append(*res, Result{rank, pos})
+		*res = append(*res, rank)
 	}
 	for i := uint64(0); uint64(len(*res)) < limit; i++ {
 		if ok, _ := trie.louds.Get(pos + i); ok {
@@ -261,7 +268,7 @@ func (trie *TrieData) getTail(tailID uint64) string {
 }
 
 /*
-DecodeKey returns key string corresponding to the ID
+DecodeKey returns key string corresponding to the ID.
 */
 func (trie *TrieData) DecodeKey(id uint64) string {
 	nodeID, _ := trie.terminal.Select1(id)
