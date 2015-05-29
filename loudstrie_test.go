@@ -39,6 +39,10 @@ func TestExactMatchSearch(t *testing.T) {
 			t.Error("Expected", key, "got", decode)
 		}
 	}
+	id := trie.ExactMatchSearch("aaa")
+	if id != NotFound {
+		t.Error("Expected", NotFound, "got", id)
+	}
 }
 
 func TestCommonPrefixSearch(t *testing.T) {
@@ -64,6 +68,10 @@ func TestCommonPrefixSearch(t *testing.T) {
 		t.Error(str)
 	}
 
+	results = trie.CommonPrefixSearch("abcde", 1)
+	if len(results) != 1 {
+		t.Error(results)
+	}
 }
 
 func TestPredictiveSearch(t *testing.T) {
@@ -80,5 +88,9 @@ func TestPredictiveSearch(t *testing.T) {
 	if len(results) != 3 {
 		t.Error(len(results))
 	}
-}
 
+	results = trie.PredictiveSearch("ab", 1)
+	if len(results) != 1 {
+		t.Error(len(results))
+	}
+}

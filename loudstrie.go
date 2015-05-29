@@ -84,7 +84,10 @@ func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 	keyLen := uint64(len(key))
 	for keyPos <= keyLen {
 		id = trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
-		if keyPos == keyLen+1 && id != CanNotTraverse {
+		if id == CanNotTraverse {
+			break
+		}
+		if keyPos == keyLen+1 {
 			return id
 		}
 	}
