@@ -93,7 +93,7 @@ func TestPredictiveSearch(t *testing.T) {
 	if len(results) != 1 {
 		t.Error(results)
 	}
-	results = trie.PredictiveSearch("c", 0)
+	results = trie.PredictiveSearch("can", 0)
 	if len(results) != 1 {
 		t.Error(results)
 	}
