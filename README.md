@@ -10,6 +10,11 @@ Description
 
 LOUDS(Level-Order Unary Degree Sequence) Trie implementation for Go
 
+Documentation
+-------------
+
+[API documentation](http://godoc.org/github.com/hideo55/go-loudstrie)
+
 License
 --------
 
