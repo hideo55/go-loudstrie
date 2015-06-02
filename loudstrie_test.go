@@ -84,6 +84,7 @@ func TestPredictiveSearch(t *testing.T) {
 		"can",
 	}
 	trie, _ := builder.Build(keyList, true)
+
 	results := trie.PredictiveSearch("ab", 0)
 	if len(results) != 3 {
 		t.Error(results)
@@ -101,5 +102,8 @@ func TestPredictiveSearch(t *testing.T) {
 	if len(results) != 0 {
 		t.Error(results)
 	}
-
+	results = trie.PredictiveSearch("cas", 0)
+	if len(results) != 0 {
+		t.Error(results)
+	}
 }
