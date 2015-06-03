@@ -134,3 +134,37 @@ func TestPredictiveSearch(t *testing.T) {
 		}
 	}
 }
+
+func TestMarshalBinary(t *testing.T) {
+	builder := NewTrieBuilder()
+	keyList := []string{
+		"bbc",
+		"able",
+		"abc",
+		"abcde",
+		"can",
+	}
+	trie1, _ := builder.Build(keyList, true)
+	trie2, _ := builder.Build(keyList, false)
+	tries := []*Trie{&trie1, &trie2}
+
+	for _, trie := range tries {
+		buf, err := (*trie).MarshalBinary()
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+		newtrie := new(TrieData)
+		err = newtrie.UnmarshalBinary(buf)
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+
+		for _, key := range keyList {
+            id := newtrie.ExactMatchSearch(key)
+            decode := newtrie.DecodeKey(id)
+            if key != decode {
+                t.Error("Expected", key, "got", decode)
+            }
+        }
+	}
+}

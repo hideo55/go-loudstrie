@@ -24,6 +24,10 @@ package loudstrie
 
 import (
 	"bytes"
+	"encoding"
+	"encoding/binary"
+	"errors"
+	"unsafe"
 
 	"github.com/hideo55/go-sbvector"
 )
@@ -56,6 +60,8 @@ type Result struct {
 Trie is interface of LOUDS Trie.
 */
 type Trie interface {
+	encoding.BinaryMarshaler
+	encoding.BinaryUnmarshaler
 	ExactMatchSearch(key string) uint64
 	CommonPrefixSearch(key string, limit uint64) []Result
 	PredictiveSearch(key string, limit uint64) []uint64
@@ -71,6 +77,14 @@ const (
 	CanNotTraverse uint64 = 0xFFFFFFFFFFFFFFFE
 	// NoLimit indicates `Doesn't limit number of results`
 	NoLimit uint64 = 0xFFFFFFFFFFFFFFFF
+
+	sizeOfInt32 uint32 = 4
+	sizeOfInt64 uint32 = 8
+)
+
+var (
+	// ErrorInvalidFormat indicates that binary format is invalid.
+	ErrorInvalidFormat = errors.New("UnmarshalBinary: invalid binary format")
 )
 
 /*
@@ -303,6 +317,252 @@ GetNumOfKeys returns number of keys in trie.
 */
 func (trie *TrieData) GetNumOfKeys() uint64 {
 	return trie.numOfKeys
+}
+
+/*
+MarshalBinary
+*/
+func (trie *TrieData) MarshalBinary() ([]byte, error) {
+	buffer := new(bytes.Buffer)
+
+	binary.Write(buffer, binary.LittleEndian, &trie.numOfKeys)
+
+	// louds
+	buf, _ := trie.louds.MarshalBinary()
+	loudsSize := uint32(len(buf))
+	binary.Write(buffer, binary.LittleEndian, &loudsSize)
+	binary.Write(buffer, binary.LittleEndian, buf)
+
+	// terminal
+	buf, _ = trie.terminal.MarshalBinary()
+	terminalSize := uint32(len(buf))
+	binary.Write(buffer, binary.LittleEndian, &terminalSize)
+	binary.Write(buffer, binary.LittleEndian, buf)
+
+	// tail
+	buf, _ = trie.tail.MarshalBinary()
+	tailSize := uint32(len(buf))
+	binary.Write(buffer, binary.LittleEndian, &tailSize)
+	binary.Write(buffer, binary.LittleEndian, buf)
+
+	// edges
+	edgesSize := uint32(len(trie.edges))
+	binary.Write(buffer, binary.LittleEndian, &edgesSize)
+	binary.Write(buffer, binary.LittleEndian, trie.edges)
+
+	// hasTailTrie
+	hasTailTrie := uint32(0)
+	if trie.hasTailTrie {
+		hasTailTrie = uint32(1)
+	}
+	binary.Write(buffer, binary.LittleEndian, &hasTailTrie)
+
+	if trie.hasTailTrie {
+		// tailTrie
+		buf, _ = trie.tailTrie.MarshalBinary()
+		tailTrieSize := uint32(len(buf))
+		binary.Write(buffer, binary.LittleEndian, &tailTrieSize)
+		binary.Write(buffer, binary.LittleEndian, buf)
+
+		// tailIDSize
+		binary.Write(buffer, binary.LittleEndian, &trie.tailIDSize)
+
+		// tailIDs
+		buf, _ = trie.tailIDs.MarshalBinary()
+		tailIDsSize := uint32(len(buf))
+		binary.Write(buffer, binary.LittleEndian, &tailIDsSize)
+		binary.Write(buffer, binary.LittleEndian, buf)
+
+	} else {
+		vtailSize := uint32(len(trie.vtails))
+		binary.Write(buffer, binary.LittleEndian, &vtailSize)
+		for _, str := range trie.vtails {
+			buf = *(*[]byte)(unsafe.Pointer(&str))
+			strlen := uint32(len(buf))
+			binary.Write(buffer, binary.LittleEndian, &strlen)
+			binary.Write(buffer, binary.LittleEndian, buf)
+		}
+	}
+	return buffer.Bytes(), nil
+}
+
+/*
+UnmarshalBinary
+*/
+func (trie *TrieData) UnmarshalBinary(data []byte) error {
+	newtrie := new(TrieData)
+	offset := uint32(0)
+	buf := data[offset : offset+sizeOfInt64]
+	if uint32(len(buf)) < sizeOfInt64 {
+		return ErrorInvalidFormat
+	}
+	offset += sizeOfInt64
+	newtrie.numOfKeys = binary.LittleEndian.Uint64(buf)
+	buf = data[offset : offset+sizeOfInt32]
+	if uint32(len(buf)) < sizeOfInt32 {
+		return ErrorInvalidFormat
+	}
+	offset += sizeOfInt32
+	loudsSize := binary.LittleEndian.Uint32(buf)
+
+	buf = data[offset : offset+loudsSize]
+	if uint32(len(buf)) < loudsSize {
+		return ErrorInvalidFormat
+	}
+	louds, err := sbvector.NewVectorFromBinary(buf)
+	if err != nil {
+		return ErrorInvalidFormat
+	}
+	newtrie.louds = louds
+	offset += loudsSize
+
+	buf = data[offset : offset+sizeOfInt32]
+	if uint32(len(buf)) < sizeOfInt32 {
+		return ErrorInvalidFormat
+	}
+	offset += sizeOfInt32
+	terminalSize := binary.LittleEndian.Uint32(buf)
+
+	buf = data[offset : offset+terminalSize]
+	if uint32(len(buf)) < terminalSize {
+		return ErrorInvalidFormat
+	}
+	terminal, err := sbvector.NewVectorFromBinary(buf)
+	if err != nil {
+		return ErrorInvalidFormat
+	}
+	newtrie.terminal = terminal
+	offset += terminalSize
+
+	buf = data[offset : offset+sizeOfInt32]
+	if uint32(len(buf)) < sizeOfInt32 {
+		return ErrorInvalidFormat
+	}
+	offset += sizeOfInt32
+	tailSize := binary.LittleEndian.Uint32(buf)
+
+	buf = data[offset : offset+tailSize]
+	if uint32(len(buf)) < tailSize {
+		return ErrorInvalidFormat
+	}
+	tail, err := sbvector.NewVectorFromBinary(buf)
+	if err != nil {
+		return ErrorInvalidFormat
+	}
+	newtrie.tail = tail
+	offset += tailSize
+
+	buf = data[offset : offset+sizeOfInt32]
+	if uint32(len(buf)) < sizeOfInt32 {
+		return ErrorInvalidFormat
+	}
+	offset += sizeOfInt32
+	edgesSize := binary.LittleEndian.Uint32(buf)
+
+	buf = data[offset : offset+edgesSize]
+	if uint32(len(buf)) < edgesSize {
+		return ErrorInvalidFormat
+	}
+	newtrie.edges = make([]byte, edgesSize)
+	copy(newtrie.edges, buf)
+	offset += edgesSize
+
+	buf = data[offset : offset+sizeOfInt32]
+	if uint32(len(buf)) < sizeOfInt32 {
+		return ErrorInvalidFormat
+	}
+	offset += sizeOfInt32
+	hasTailTrie := binary.LittleEndian.Uint32(buf)
+	if hasTailTrie == 0 {
+		newtrie.hasTailTrie = false
+	} else {
+		newtrie.hasTailTrie = true
+	}
+
+	if newtrie.hasTailTrie {
+		buf = data[offset : offset+sizeOfInt32]
+		if uint32(len(buf)) < sizeOfInt32 {
+			return ErrorInvalidFormat
+		}
+		offset += sizeOfInt32
+		tailTrieSize := binary.LittleEndian.Uint32(buf)
+
+		buf = data[offset : offset+tailTrieSize]
+		if uint32(len(buf)) < tailTrieSize {
+			return ErrorInvalidFormat
+		}
+		newtrie.tailTrie = &TrieData{}
+		err = newtrie.tailTrie.UnmarshalBinary(buf)
+		if err != nil {
+			return ErrorInvalidFormat
+		}
+		offset += tailTrieSize
+
+		buf = data[offset : offset+sizeOfInt64]
+		if uint32(len(buf)) < sizeOfInt64 {
+			return ErrorInvalidFormat
+		}
+		offset += sizeOfInt64
+		newtrie.tailIDSize = binary.LittleEndian.Uint64(buf)
+
+		buf = data[offset : offset+sizeOfInt32]
+		if uint32(len(buf)) < sizeOfInt32 {
+			return ErrorInvalidFormat
+		}
+		offset += sizeOfInt32
+		tailIDsSize := binary.LittleEndian.Uint32(buf)
+
+		buf = data[offset : offset+tailIDsSize]
+		if uint32(len(buf)) < tailIDsSize {
+			return ErrorInvalidFormat
+		}
+		tailIDs, err := sbvector.NewVectorFromBinary(buf)
+		if err != nil {
+			return ErrorInvalidFormat
+		}
+		newtrie.tailIDs = tailIDs
+	} else {
+		buf = data[offset : offset+sizeOfInt32]
+		if uint32(len(buf)) < sizeOfInt32 {
+			return ErrorInvalidFormat
+		}
+		offset += sizeOfInt32
+		vtailSize := binary.LittleEndian.Uint32(buf)
+		newtrie.vtails = make([]string, vtailSize)
+		for i := uint32(0); i < vtailSize; i++ {
+			buf = data[offset : offset+sizeOfInt32]
+			if uint32(len(buf)) < sizeOfInt32 {
+				return ErrorInvalidFormat
+			}
+			offset += sizeOfInt32
+			strSize := binary.LittleEndian.Uint32(buf)
+
+			buf = data[offset : offset+strSize]
+			if uint32(len(buf)) < strSize {
+				return ErrorInvalidFormat
+			}
+			offset += strSize
+			newtrie.vtails[i] = bytes.NewBuffer(buf).String()
+		}
+	}
+
+	trie.numOfKeys = newtrie.numOfKeys
+	trie.louds = newtrie.louds
+	trie.terminal = newtrie.terminal
+	trie.tail = newtrie.tail
+	trie.edges = make([]byte, edgesSize)
+	copy(trie.edges, newtrie.edges)
+	if newtrie.hasTailTrie {
+		trie.hasTailTrie = true
+		trie.tailTrie = newtrie.tailTrie
+		trie.tailIDSize = newtrie.tailIDSize
+		trie.tailIDs = newtrie.tailIDs
+	} else {
+		trie.hasTailTrie = false
+		trie.vtails = make([]string, len(newtrie.vtails))
+		trie.vtails = newtrie.vtails
+	}
+	return nil
 }
 
 func max(x uint64, y uint64) uint64 {
