@@ -110,6 +110,7 @@ var (
 
 /*
 ExactMatchSearch looks up key exact match with query string.
+Returns loudstrie.NotFound if can't find exact matched key in the TRIE.
 */
 func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 	id := uint64(0)
