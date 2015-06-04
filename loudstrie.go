@@ -3,6 +3,8 @@ Package loudstrie is implementation of LOUDS(Level-Order Unary Degree Sequence) 
 
 Synopsis
 	import (
+			"fmt"
+
 			"github.com/hideo55/go-loudstrie"
 	)
 
@@ -17,7 +19,14 @@ Synopsis
 		}
 		trie, err := builder.Build(keyList, false)
 
-		res := trie.CommonPrefixSearch()
+		result := trie.CommonPrefixSearch("ab", 0)
+		for _, item := range result {
+			// item has two menbers, ID and Depth.
+			// ID: ID of the leaf node.
+			// Depth: Tree depth of the leaf node.
+			key := trie.DecodeKey(item.ID)
+			fmt.Printf("ID:%d, key:%s, len:%d\n", item.ID, key, item.Depth)
+		}
 	}
 */
 package loudstrie
@@ -320,7 +329,7 @@ func (trie *TrieData) GetNumOfKeys() uint64 {
 }
 
 /*
-MarshalBinary
+MarshalBinary implements the encoding.BinaryMarshaler interface.
 */
 func (trie *TrieData) MarshalBinary() ([]byte, error) {
 	buffer := new(bytes.Buffer)
@@ -387,7 +396,7 @@ func (trie *TrieData) MarshalBinary() ([]byte, error) {
 }
 
 /*
-UnmarshalBinary
+UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
 */
 func (trie *TrieData) UnmarshalBinary(data []byte) error {
 	newtrie := new(TrieData)
