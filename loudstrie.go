@@ -3,9 +3,9 @@ Package loudstrie is implementation of LOUDS(Level-Order Unary Degree Sequence) 
 
 Synopsis
 	import (
-			"fmt"
+		"fmt"
 
-			"github.com/hideo55/go-loudstrie"
+		"github.com/hideo55/go-loudstrie"
 	)
 
 	func example() {
@@ -17,7 +17,11 @@ Synopsis
 			"abcde",
 			"can",
 		}
+
 		trie, err := builder.Build(keyList, false)
+		if err != nil {
+			// Failed to build trie.
+		}
 
 		result := trie.CommonPrefixSearch("ab", 0)
 		for _, item := range result {
@@ -26,6 +30,12 @@ Synopsis
 			// Depth: Tree depth of the leaf node.
 			key := trie.DecodeKey(item.ID)
 			fmt.Printf("ID:%d, key:%s, len:%d\n", item.ID, key, item.Depth)
+		}
+
+		// Output trie to []byte
+		trieBinData, err := trie.MarshalBinary()
+		if err != nil {
+			// Failed to serialize
 		}
 	}
 */
