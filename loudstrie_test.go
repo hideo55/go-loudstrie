@@ -142,7 +142,7 @@ func TestMarshalBinary(t *testing.T) {
 		"able",
 		"abc",
 		"abcde",
-		"can",
+		"canon",
 	}
 	trie1, _ := builder.Build(keyList, true)
 	trie2, _ := builder.Build(keyList, false)
@@ -160,11 +160,11 @@ func TestMarshalBinary(t *testing.T) {
 		}
 
 		for _, key := range keyList {
-            id := newtrie.ExactMatchSearch(key)
-            decode := newtrie.DecodeKey(id)
-            if key != decode {
-                t.Error("Expected", key, "got", decode)
-            }
-        }
+			id := newtrie.ExactMatchSearch(key)
+			decode := newtrie.DecodeKey(id)
+			if key != decode {
+				t.Error("Expected", key, "got", decode)
+			}
+		}
 	}
 }
