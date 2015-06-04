@@ -25,11 +25,11 @@ Synopsis
 
 		result := trie.CommonPrefixSearch("ab", 0)
 		for _, item := range result {
-			// item has two menbers, ID and Depth.
-			// ID: ID of the leaf node.
-			// Depth: Tree depth of the leaf node.
+			// item has two menbers, ID and Length.
+			// ID: ID of the key.
+			// Length: Length of the key string.
 			key := trie.DecodeKey(item.ID)
-			fmt.Printf("ID:%d, key:%s, len:%d\n", item.ID, key, item.Depth)
+			fmt.Printf("ID:%d, key:%s, len:%d\n", item.ID, key, item.Length)
 		}
 
 		// Output trie to []byte
@@ -71,8 +71,10 @@ type TrieData struct {
 Result holds result of common-prefix search.
 */
 type Result struct {
+	// ID of the key. 
 	ID    uint64
-	Depth uint64
+	// Length of the key string.
+	Length uint64
 }
 
 /*

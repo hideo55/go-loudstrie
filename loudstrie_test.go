@@ -82,11 +82,11 @@ func TestCommonPrefixSearch(t *testing.T) {
 			t.Error(results)
 		}
 		str := (*trie).DecodeKey(results[0].ID)
-		if str != "abc" {
+		if str != "abc" || uint64(len(str)) != results[0].Length {
 			t.Error(str)
 		}
 		str = (*trie).DecodeKey(results[1].ID)
-		if str != "abcde" {
+		if str != "abcde" || uint64(len(str)) != results[1].Length {
 			t.Error(str)
 		}
 
