@@ -109,15 +109,17 @@ var (
 )
 
 /*
-ExactMatchSearch looks up key exact match with query string.
-Returns loudstrie.NotFound if can't find exact matched key in the TRIE.
+ExactMatchSearch looks up exact match key with query string.
+
+This function returns id of the exact matched key with query string.
+If couldn't find exact matched key, returns `loudstrie.NotFound`.
 */
 func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 	id := uint64(0)
 	nodePos := uint64(0)
 	zeros := uint64(0)
 	keyPos := uint64(0)
-	keyLen := uint64(len(key))
+	keyLen := uint64(len(query))
 	for keyPos <= keyLen {
 		id = trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
 		if id == CanNotTraverse {
