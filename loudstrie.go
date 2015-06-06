@@ -162,6 +162,7 @@ func (trie *TrieData) CommonPrefixSearch(key string, limit uint64) []Result {
 
 /*
 PredictiveSearch searches keys starting with a query string.
+This function returns slice of ID.
 */
 func (trie *TrieData) PredictiveSearch(key string, limit uint64) []uint64 {
 	res := make([]uint64, 0)
@@ -196,6 +197,7 @@ func (trie *TrieData) PredictiveSearch(key string, limit uint64) []uint64 {
 
 /*
 Traverse the node of the trie.
+This function returns ID of the key.
 */
 func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64 {
 	id := NotFound
