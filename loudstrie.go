@@ -134,6 +134,8 @@ func (trie *TrieData) ExactMatchSearch(key string) uint64 {
 
 /*
 CommonPrefixSearch looks up keys from the possible prefixes of a query string.
+
+This function returns slice of `Result`. `Result` holds ID and length of the key.
 */
 func (trie *TrieData) CommonPrefixSearch(key string, limit uint64) []Result {
 	nodePos := uint64(0)
