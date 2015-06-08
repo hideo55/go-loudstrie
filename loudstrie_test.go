@@ -48,15 +48,21 @@ func TestExactMatchSearch(t *testing.T) {
 	for _, trie := range tries {
 
 		for _, key := range keyList {
-			id := (*trie).ExactMatchSearch(key)
-			decode := (*trie).DecodeKey(id)
+			id, found := (*trie).ExactMatchSearch(key)
+			if !found {
+				t.Error("Not found", key)
+			}
+			decode, found := (*trie).DecodeKey(id)
+			if !found {
+				t.Error("Not found", id)
+			}
 			if key != decode {
 				t.Error("Expected", key, "got", decode)
 			}
 		}
-		id := (*trie).ExactMatchSearch("aaa")
-		if id != NotFound {
-			t.Error("Expected", NotFound, "got", id)
+		id, found := (*trie).ExactMatchSearch("NotExist")
+		if found {
+			t.Error("Search error for key that does not exist in the trie.", id)
 		}
 	}
 }
@@ -81,11 +87,11 @@ func TestCommonPrefixSearch(t *testing.T) {
 		if len(results) != 2 {
 			t.Error(results)
 		}
-		str := (*trie).DecodeKey(results[0].ID)
+		str, _ := (*trie).DecodeKey(results[0].ID)
 		if str != "abc" || uint64(len(str)) != results[0].Length {
 			t.Error(str)
 		}
-		str = (*trie).DecodeKey(results[1].ID)
+		str, _ = (*trie).DecodeKey(results[1].ID)
 		if str != "abcde" || uint64(len(str)) != results[1].Length {
 			t.Error(str)
 		}
@@ -135,6 +141,34 @@ func TestPredictiveSearch(t *testing.T) {
 	}
 }
 
+func TestDecodeKey(t *testing.T) {
+    builder := NewTrieBuilder()
+    keyList := []string{
+        "bbc",
+        "able",
+        "abc",
+        "abcde",
+        "canon",
+    }
+    trie1, _ := builder.Build(keyList, true)
+    trie2, _ := builder.Build(keyList, false)
+    tries := []*Trie{&trie1, &trie2}
+
+    for _, trie := range tries {
+		for i := 0; i < len(keyList); i++ {
+			key, found := (*trie).DecodeKey(uint64(i))
+			if !found {
+				t.Error("Not found", key, i);
+			}
+		}
+		id := uint64(len(keyList)+1)
+		key, found := (*trie).DecodeKey(id)
+		if key != "" || found {
+			t.Error("earch error for key that does not exist in the trie.", id)
+		}
+	}
+}
+
 func TestMarshalBinary(t *testing.T) {
 	builder := NewTrieBuilder()
 	keyList := []string{
@@ -160,8 +194,11 @@ func TestMarshalBinary(t *testing.T) {
 		}
 
 		for _, key := range keyList {
-			id := newtrie.ExactMatchSearch(key)
-			decode := newtrie.DecodeKey(id)
+			id, found := newtrie.ExactMatchSearch(key)
+			if !found {
+				t.Error("Not found", key)
+			}
+			decode, _ := newtrie.DecodeKey(id)
 			if key != decode {
 				t.Error("Expected", key, "got", decode)
 			}

@@ -23,13 +23,20 @@ Synopsis
 			// Failed to build trie.
 		}
 
+		// Common prefix search
 		result := trie.CommonPrefixSearch("ab", 0)
 		for _, item := range result {
 			// item has two menbers, ID and Length.
 			// ID: ID of the key.
 			// Length: Length of the key string.
-			key := trie.DecodeKey(item.ID)
+			key, _ := trie.DecodeKey(item.ID)
 			fmt.Printf("ID:%d, key:%s, len:%d\n", item.ID, key, item.Length)
+		}
+
+		// Exact match search
+		query := "can"
+		if id, found := trie.ExactMatchSearch(query); found {
+			fmt.Printf("ID of %s: %d, query, id)
 		}
 
 		// Output trie to []byte
@@ -83,21 +90,19 @@ Trie is interface of LOUDS Trie.
 type Trie interface {
 	encoding.BinaryMarshaler
 	encoding.BinaryUnmarshaler
-	ExactMatchSearch(key string) uint64
+	ExactMatchSearch(key string) (uint64, bool)
 	CommonPrefixSearch(key string, limit uint64) []Result
 	PredictiveSearch(key string, limit uint64) []uint64
-	Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64
-	DecodeKey(id uint64) string
+	Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) (uint64, bool)
+	DecodeKey(id uint64) (string, bool)
 	GetNumOfKeys() uint64
 }
 
 const (
 	// NotFound indicates `value is not found`
 	NotFound uint64 = 0xFFFFFFFFFFFFFFFF
-	// CanNotTraverse indicates `subsequent node is not found`
-	CanNotTraverse uint64 = 0xFFFFFFFFFFFFFFFE
-	// NoLimit indicates `Doesn't limit number of results`
-	NoLimit uint64 = 0xFFFFFFFFFFFFFFFF
+	// noLimit indicates `Doesn't limit number of results`
+	noLimit uint64 = 0xFFFFFFFFFFFFFFFF
 
 	sizeOfInt32 uint32 = 4
 	sizeOfInt64 uint32 = 8
@@ -112,24 +117,23 @@ var (
 ExactMatchSearch looks up exact match key with query string.
 
 This function returns id of the exact matched key with query string.
-If couldn't find exact matched key, returns `loudstrie.NotFound`.
+If couldn't find exact matched key, value of second result parameter is false.
 */
-func (trie *TrieData) ExactMatchSearch(key string) uint64 {
-	id := uint64(0)
+func (trie *TrieData) ExactMatchSearch(key string) (uint64, bool) {
 	nodePos := uint64(0)
 	zeros := uint64(0)
 	keyPos := uint64(0)
 	keyLen := uint64(len(key))
 	for keyPos <= keyLen {
-		id = trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
-		if id == CanNotTraverse {
+		id, canTraverse := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
+		if !canTraverse {
 			break
 		}
 		if keyPos == keyLen+1 {
-			return id
+			return id, true
 		}
 	}
-	return NotFound
+	return NotFound, false
 }
 
 /*
@@ -142,14 +146,14 @@ func (trie *TrieData) CommonPrefixSearch(key string, limit uint64) []Result {
 	zeros := uint64(0)
 	keyPos := uint64(0)
 	keyLen := uint64(len(key))
-	res := make([]Result, 0)
+	var res []Result
 	if limit == 0 {
-		limit = NoLimit
+		limit = noLimit
 	}
 
 	for {
-		id := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
-		if id == CanNotTraverse {
+		id, canTraverse := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
+		if !canTraverse {
 			break
 		}
 		if id != NotFound {
@@ -167,9 +171,9 @@ PredictiveSearch searches keys starting with a query string.
 This function returns slice of ID.
 */
 func (trie *TrieData) PredictiveSearch(key string, limit uint64) []uint64 {
-	res := make([]uint64, 0)
+	var res []uint64
 	if limit == 0 {
-		limit = NoLimit
+		limit = noLimit
 	}
 	pos := uint64(2)
 	zeros := uint64(2)
@@ -199,12 +203,17 @@ func (trie *TrieData) PredictiveSearch(key string, limit uint64) []uint64 {
 
 /*
 Traverse the node of the trie.
-This function returns ID of the key.
+
+This function returns ID of the key and bool value that indicates possible transition to a next node.
+
+If current node is not "terminal", value of ID(first result parameter) is `loudstrie.NotFound`.
+
+If value of the second result parameter's  is false , it indicates "Can't transition to next node".
 */
-func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) uint64 {
+func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros *uint64, keyPos *uint64) (uint64, bool) {
 	id := NotFound
 	if *nodePos == NotFound {
-		return CanNotTraverse
+		return id, false
 	}
 	defaultPos := uint64(2)
 	*nodePos = max(*nodePos, defaultPos)
@@ -230,10 +239,10 @@ func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros
 
 	*keyPos++
 	if id == NotFound && *nodePos == NotFound {
-		return CanNotTraverse
+		return id, false
 	}
 
-	return id
+	return id, true
 }
 
 func (trie *TrieData) isLeaf(pos uint64) bool {
@@ -302,7 +311,7 @@ func (trie *TrieData) tailMatch(str string, strlen uint64, depth uint64, tailID 
 func (trie *TrieData) getTail(tailID uint64) string {
 	if trie.hasTailTrie {
 		id, _ := trie.tailIDs.GetBits(trie.tailIDSize*tailID, trie.tailIDSize)
-		tail := trie.tailTrie.DecodeKey(id)
+		tail, _ := trie.tailTrie.DecodeKey(id)
 		runes := []rune(tail)
 		for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
 			runes[i], runes[j] = runes[j], runes[i]
@@ -315,7 +324,10 @@ func (trie *TrieData) getTail(tailID uint64) string {
 /*
 DecodeKey returns key string corresponding to the ID.
 */
-func (trie *TrieData) DecodeKey(id uint64) string {
+func (trie *TrieData) DecodeKey(id uint64) (string, bool) {
+	if trie.terminal.NumOfBits(true) < id {
+		return "", false
+	}
 	nodeID, _ := trie.terminal.Select1(id)
 	pos, _ := trie.louds.Select1(nodeID)
 	pos++
@@ -337,7 +349,7 @@ func (trie *TrieData) DecodeKey(id uint64) string {
 		key += tailStr
 	}
 
-	return key
+	return key, true
 }
 
 /*

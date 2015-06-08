@@ -150,7 +150,7 @@ func (builder *TrieBuilderData) buildTailTrie() {
 	builder.trie.tailIDSize = lg2(tailTrie.GetNumOfKeys())
 	tailIDBuilder := sbvector.NewVectorBuilder()
 	for _, tail := range keyList {
-		id := tailTrie.ExactMatchSearch(tail)
+		id, _ := tailTrie.ExactMatchSearch(tail)
 		tailIDBuilder.PushBackBits(id, builder.trie.tailIDSize)
 	}
 	builder.trie.tailIDs, _ = tailIDBuilder.Build(false, false)
