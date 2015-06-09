@@ -114,6 +114,15 @@ var (
 )
 
 /*
+NewTrieFromBinary returns new Trie that initialize by binary data.
+*/
+func NewTrieFromBinary(binData []byte) (Trie, error)  {
+	trie := new(TrieData)
+	err := trie.UnmarshalBinary(binData)
+	return trie, err
+}
+
+/*
 ExactMatchSearch looks up exact match key with query string.
 
 This function returns id of the exact matched key with query string.

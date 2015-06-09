@@ -187,8 +187,7 @@ func TestMarshalBinary(t *testing.T) {
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		newtrie := new(TrieData)
-		err = newtrie.UnmarshalBinary(buf)
+		newtrie, err := NewTrieFromBinary(buf)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
