@@ -203,4 +203,10 @@ func TestMarshalBinary(t *testing.T) {
 			}
 		}
 	}
+
+	var buf []byte
+	_, err := NewTrieFromBinary(buf)
+	if err == nil || err != ErrorInvalidFormat {
+		t.Error()
+	}
 }

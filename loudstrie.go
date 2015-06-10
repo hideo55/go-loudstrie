@@ -78,8 +78,8 @@ type TrieData struct {
 Result holds result of common-prefix search.
 */
 type Result struct {
-	// ID of the key. 
-	ID    uint64
+	// ID of the key.
+	ID uint64
 	// Length of the key string.
 	Length uint64
 }
@@ -116,7 +116,7 @@ var (
 /*
 NewTrieFromBinary returns new Trie that initialize by binary data.
 */
-func NewTrieFromBinary(binData []byte) (Trie, error)  {
+func NewTrieFromBinary(binData []byte) (Trie, error) {
 	trie := new(TrieData)
 	err := trie.UnmarshalBinary(binData)
 	return trie, err
@@ -441,41 +441,44 @@ UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
 func (trie *TrieData) UnmarshalBinary(data []byte) error {
 	newtrie := new(TrieData)
 	offset := uint32(0)
-	buf := data[offset : offset+sizeOfInt64]
-	if uint32(len(buf)) < sizeOfInt64 {
+
+	if uint32(len(data)) < offset+sizeOfInt64 {
 		return ErrorInvalidFormat
 	}
+	buf := data[offset : offset+sizeOfInt64]
 	offset += sizeOfInt64
 	newtrie.numOfKeys = binary.LittleEndian.Uint64(buf)
-	buf = data[offset : offset+sizeOfInt32]
-	if uint32(len(buf)) < sizeOfInt32 {
+
+	if uint32(len(data)) < sizeOfInt32 {
 		return ErrorInvalidFormat
 	}
+	buf = data[offset : offset+sizeOfInt32]
 	offset += sizeOfInt32
 	loudsSize := binary.LittleEndian.Uint32(buf)
 
-	buf = data[offset : offset+loudsSize]
-	if uint32(len(buf)) < loudsSize {
+	if uint32(len(data)) < offset+loudsSize {
 		return ErrorInvalidFormat
 	}
+	buf = data[offset : offset+loudsSize]
+	offset += loudsSize
 	louds, err := sbvector.NewVectorFromBinary(buf)
 	if err != nil {
 		return ErrorInvalidFormat
 	}
 	newtrie.louds = louds
-	offset += loudsSize
 
-	buf = data[offset : offset+sizeOfInt32]
-	if uint32(len(buf)) < sizeOfInt32 {
+	if uint32(len(data)) < offset+sizeOfInt32 {
 		return ErrorInvalidFormat
 	}
+	buf = data[offset : offset+sizeOfInt32]
 	offset += sizeOfInt32
 	terminalSize := binary.LittleEndian.Uint32(buf)
 
-	buf = data[offset : offset+terminalSize]
-	if uint32(len(buf)) < terminalSize {
+	if uint32(len(data)) < offset+terminalSize {
 		return ErrorInvalidFormat
 	}
+
+	buf = data[offset : offset+terminalSize]
 	terminal, err := sbvector.NewVectorFromBinary(buf)
 	if err != nil {
 		return ErrorInvalidFormat
@@ -483,17 +486,17 @@ func (trie *TrieData) UnmarshalBinary(data []byte) error {
 	newtrie.terminal = terminal
 	offset += terminalSize
 
-	buf = data[offset : offset+sizeOfInt32]
-	if uint32(len(buf)) < sizeOfInt32 {
+	if uint32(len(data)) < offset+sizeOfInt32 {
 		return ErrorInvalidFormat
 	}
+	buf = data[offset : offset+sizeOfInt32]
 	offset += sizeOfInt32
 	tailSize := binary.LittleEndian.Uint32(buf)
 
-	buf = data[offset : offset+tailSize]
-	if uint32(len(buf)) < tailSize {
+	if uint32(len(data)) < offset+tailSize {
 		return ErrorInvalidFormat
 	}
+	buf = data[offset : offset+tailSize]
 	tail, err := sbvector.NewVectorFromBinary(buf)
 	if err != nil {
 		return ErrorInvalidFormat
@@ -501,25 +504,25 @@ func (trie *TrieData) UnmarshalBinary(data []byte) error {
 	newtrie.tail = tail
 	offset += tailSize
 
-	buf = data[offset : offset+sizeOfInt32]
-	if uint32(len(buf)) < sizeOfInt32 {
+	if uint32(len(data)) < offset+sizeOfInt32 {
 		return ErrorInvalidFormat
 	}
+	buf = data[offset : offset+sizeOfInt32]
 	offset += sizeOfInt32
 	edgesSize := binary.LittleEndian.Uint32(buf)
 
-	buf = data[offset : offset+edgesSize]
-	if uint32(len(buf)) < edgesSize {
+	if uint32(len(data)) < offset+edgesSize {
 		return ErrorInvalidFormat
 	}
+	buf = data[offset : offset+edgesSize]
 	newtrie.edges = make([]byte, edgesSize)
 	copy(newtrie.edges, buf)
 	offset += edgesSize
 
-	buf = data[offset : offset+sizeOfInt32]
-	if uint32(len(buf)) < sizeOfInt32 {
+	if uint32(len(data)) < offset+sizeOfInt32 {
 		return ErrorInvalidFormat
 	}
+	buf = data[offset : offset+sizeOfInt32]
 	offset += sizeOfInt32
 	hasTailTrie := binary.LittleEndian.Uint32(buf)
 	if hasTailTrie == 0 {
@@ -529,17 +532,17 @@ func (trie *TrieData) UnmarshalBinary(data []byte) error {
 	}
 
 	if newtrie.hasTailTrie {
-		buf = data[offset : offset+sizeOfInt32]
-		if uint32(len(buf)) < sizeOfInt32 {
+		if uint32(len(data)) < offset+sizeOfInt32 {
 			return ErrorInvalidFormat
 		}
+		buf = data[offset : offset+sizeOfInt32]
 		offset += sizeOfInt32
 		tailTrieSize := binary.LittleEndian.Uint32(buf)
 
-		buf = data[offset : offset+tailTrieSize]
-		if uint32(len(buf)) < tailTrieSize {
+		if uint32(len(data)) < offset+tailTrieSize {
 			return ErrorInvalidFormat
 		}
+		buf = data[offset : offset+tailTrieSize]
 		newtrie.tailTrie = &TrieData{}
 		err = newtrie.tailTrie.UnmarshalBinary(buf)
 		if err != nil {
@@ -547,49 +550,51 @@ func (trie *TrieData) UnmarshalBinary(data []byte) error {
 		}
 		offset += tailTrieSize
 
-		buf = data[offset : offset+sizeOfInt64]
-		if uint32(len(buf)) < sizeOfInt64 {
+		if uint32(len(data)) < offset+sizeOfInt64 {
 			return ErrorInvalidFormat
 		}
+		buf = data[offset : offset+sizeOfInt64]
 		offset += sizeOfInt64
 		newtrie.tailIDSize = binary.LittleEndian.Uint64(buf)
 
-		buf = data[offset : offset+sizeOfInt32]
-		if uint32(len(buf)) < sizeOfInt32 {
+		if uint32(len(data)) < offset+sizeOfInt32 {
 			return ErrorInvalidFormat
 		}
+
+		buf = data[offset : offset+sizeOfInt32]
 		offset += sizeOfInt32
 		tailIDsSize := binary.LittleEndian.Uint32(buf)
 
-		buf = data[offset : offset+tailIDsSize]
-		if uint32(len(buf)) < tailIDsSize {
+		if uint32(len(data)) < offset+tailIDsSize {
 			return ErrorInvalidFormat
 		}
+		buf = data[offset : offset+tailIDsSize]
 		tailIDs, err := sbvector.NewVectorFromBinary(buf)
 		if err != nil {
 			return ErrorInvalidFormat
 		}
 		newtrie.tailIDs = tailIDs
 	} else {
-		buf = data[offset : offset+sizeOfInt32]
-		if uint32(len(buf)) < sizeOfInt32 {
+		if uint32(len(data)) < offset+sizeOfInt32 {
 			return ErrorInvalidFormat
 		}
+		buf = data[offset : offset+sizeOfInt32]
+
 		offset += sizeOfInt32
 		vtailSize := binary.LittleEndian.Uint32(buf)
 		newtrie.vtails = make([]string, vtailSize)
 		for i := uint32(0); i < vtailSize; i++ {
-			buf = data[offset : offset+sizeOfInt32]
-			if uint32(len(buf)) < sizeOfInt32 {
+			if uint32(len(data)) < offset+sizeOfInt32 {
 				return ErrorInvalidFormat
 			}
+			buf = data[offset : offset+sizeOfInt32]
 			offset += sizeOfInt32
 			strSize := binary.LittleEndian.Uint32(buf)
 
-			buf = data[offset : offset+strSize]
-			if uint32(len(buf)) < strSize {
+			if uint32(len(data)) < offset+strSize {
 				return ErrorInvalidFormat
 			}
+			buf = data[offset : offset+strSize]
 			offset += strSize
 			newtrie.vtails[i] = bytes.NewBuffer(buf).String()
 		}
