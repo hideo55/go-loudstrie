@@ -144,12 +144,13 @@ func (builder *TrieBuilderData) buildTailTrie() {
 	for tailIdx, tail := range origTails {
 		keyList[tailIdx] = reverseString(tail)
 	}
-
+	origKeyList := make([]string, len(origTails))
+	copy(origKeyList, keyList)
 	tailTrie, _ := vtailTrieBuilder.Build(keyList, false)
 	builder.trie.tailTrie = tailTrie
 	builder.trie.tailIDSize = lg2(tailTrie.GetNumOfKeys())
 	tailIDBuilder := sbvector.NewVectorBuilder()
-	for _, tail := range keyList {
+	for _, tail := range origKeyList {
 		id, _ := tailTrie.ExactMatchSearch(tail)
 		tailIDBuilder.PushBackBits(id, builder.trie.tailIDSize)
 	}

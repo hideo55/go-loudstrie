@@ -135,11 +135,11 @@ func (trie *TrieData) ExactMatchSearch(key string) (uint64, bool) {
 	keyLen := uint64(len(key))
 	for keyPos <= keyLen {
 		id, canTraverse := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
-		if !canTraverse {
-			break
-		}
 		if keyPos == keyLen+1 {
 			return id, true
+		}
+		if !canTraverse {
+			break
 		}
 	}
 	return NotFound, false
@@ -162,14 +162,14 @@ func (trie *TrieData) CommonPrefixSearch(key string, limit uint64) []Result {
 
 	for {
 		id, canTraverse := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
-		if !canTraverse {
-			break
-		}
 		if id != NotFound {
 			res = append(res, Result{id, keyPos - 1})
 			if uint64(len(res)) == limit {
 				break
 			}
+		}
+		if !canTraverse {
+			break
 		}
 	}
 	return res
@@ -247,7 +247,8 @@ func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros
 	}
 
 	*keyPos++
-	if id == NotFound && *nodePos == NotFound {
+
+	if *nodePos == NotFound {
 		return id, false
 	}
 
@@ -275,7 +276,12 @@ func (trie *TrieData) getChild(c byte, pos *uint64, zeros *uint64) {
 			break
 		}
 		if c == trie.edges[*zeros-uint64(2)] {
-			*pos, _ = trie.louds.Select1(*zeros - uint64(1))
+			var err error
+			*pos, err = trie.louds.Select1(*zeros - uint64(1))
+			if err != nil {
+				*pos = NotFound
+				break
+			}
 			*pos++
 			*zeros = *pos - *zeros + uint64(1)
 			break

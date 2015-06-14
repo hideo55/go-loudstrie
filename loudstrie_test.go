@@ -38,15 +38,14 @@ func TestExactMatchSearch(t *testing.T) {
 		"able",
 		"abc",
 		"abcde",
-		"can",
+		"can canv",
+		"ddddd",
 	}
-
 	trie1, _ := builder.Build(keyList, true)
 	trie2, _ := builder.Build(keyList, false)
 	tries := []*Trie{&trie1, &trie2}
 
 	for _, trie := range tries {
-
 		for _, key := range keyList {
 			id, found := (*trie).ExactMatchSearch(key)
 			if !found {
@@ -60,7 +59,7 @@ func TestExactMatchSearch(t *testing.T) {
 				t.Error("Expected", key, "got", decode)
 			}
 		}
-		id, found := (*trie).ExactMatchSearch("NotExist")
+		id, found := (*trie).ExactMatchSearch("rancho santa margarita ")
 		if found {
 			t.Error("Search error for key that does not exist in the trie.", id)
 		}
