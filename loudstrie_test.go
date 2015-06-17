@@ -2,24 +2,19 @@ package loudstrie
 
 import (
 	"crypto/rand"
+	mrand "math/rand"
 	"testing"
 )
 
 func TestBuild(t *testing.T) {
 	builder := NewTrieBuilder()
-	keyList := []string{
-		"bbc",
-		"able",
-		"abc",
-		"abcde",
-		"can",
-	}
+	keyList := genKeyList(1000, 100)
 
 	trie, err := builder.Build(keyList, true)
 	if err != nil {
 		t.Error("Build error")
 	}
-	if trie.GetNumOfKeys() != uint64(len(keyList)) {
+	if trie.GetNumOfKeys() != uint64(countUnique(keyList)) {
 		t.Error("")
 	}
 
@@ -27,7 +22,7 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Error("Build error")
 	}
-	if trie.GetNumOfKeys() != uint64(len(keyList)) {
+	if trie.GetNumOfKeys() != uint64(countUnique(keyList)) {
 		t.Error("")
 	}
 }
@@ -243,7 +238,7 @@ func TestMarshalBinary(t *testing.T) {
 	}
 }
 
-func randStr(strSize int) string {
+func randStr(strSize uint) string {
 
 	var dictionary string
 
@@ -255,4 +250,25 @@ func randStr(strSize int) string {
 		bytes[k] = dictionary[v%byte(len(dictionary))]
 	}
 	return string(bytes)
+}
+
+func genKeyList(size uint, maxLen uint) []string {
+	keyList := make([]string, size)
+	for i, _ := range keyList {
+		strLen := mrand.Int()
+		keyList[i] = randStr((uint(strLen) % maxLen) + 1)
+	}
+	return keyList
+}
+
+func countUnique(keyList []string) int {
+	seen := make(map[string]bool)
+	count := 0
+	for _, v := range keyList {
+		if _, ok := seen[v]; !ok {
+			count++
+			seen[v] = true
+		}
+	}
+	return count
 }
