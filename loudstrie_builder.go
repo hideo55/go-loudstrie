@@ -70,7 +70,7 @@ func (builder *TrieBuilderData) Build(keyList []string, useTailTrie bool) (Trie,
 
 	depth := uint64(0)
 	for {
-		if q.Size() == 0 {
+		if q.Empty() {
 			tmp := q
 			q = nextQ
 			nextQ = tmp
@@ -109,14 +109,12 @@ func (builder *TrieBuilderData) Build(keyList []string, useTailTrie bool) (Trie,
 
 		prev := newLeft
 		prevC := keyList[prev][depth]
-		degree := uint64(0)
-		for i := prev; ; i++ {
+		for i := prev + 1; ; i++ {
 			if i < right && prevC == keyList[i][depth] {
 				continue
 			}
 			trie.edges = append(trie.edges, prevC)
 			treeBuilder.PushBack(false)
-			degree++
 			nextQ.Enqueue(rangeNode{prev, i})
 			if i == right {
 				break
@@ -126,6 +124,7 @@ func (builder *TrieBuilderData) Build(keyList []string, useTailTrie bool) (Trie,
 		}
 		treeBuilder.PushBack(true)
 	}
+
 	trie.louds, _ = treeBuilder.Build(true, true)
 	trie.terminal, _ = terminalBuilder.Build(true, false)
 	trie.tail, _ = tailBuilder.Build(false, false)

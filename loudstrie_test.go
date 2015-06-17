@@ -1,6 +1,7 @@
 package loudstrie
 
 import (
+	"crypto/rand"
 	"testing"
 )
 
@@ -40,9 +41,40 @@ func TestExactMatchSearch(t *testing.T) {
 		"abcde",
 		"can canv",
 		"ddddd",
+		"2SmS9SSAc9",
+		"1uTqbtjkcwmuOIQxTprx",
+		"JANpRXwgel0Y7eSs7dxc",
+		"Abracadabra",
+		"Alpha",
+		"Bravo",
+		"Charlie",
+		"Delta",
+		"Echo",
+		"Foxtrot",
+		"Golf",
+		"Hotel",
+		"India",
+		"Juliet",
+		"Kilo",
+		"Lima",
+		"Mike",
+		"November",
+		"Oscar",
+		"Papa",
+		"Quebec",
+		"Romeo",
+		"Sierra",
+		"Tango",
+		"Uniform",
+		"Victor",
+		"Whiskey",
+		"X-ray",
+		"Yankee",
+		"Zulu",
+		"Line",
 	}
-	trie1, _ := builder.Build(keyList, true)
-	trie2, _ := builder.Build(keyList, false)
+	trie1, _ := builder.Build(keyList, false)
+	trie2, _ := builder.Build(keyList, true)
 	tries := []*Trie{&trie1, &trie2}
 
 	for _, trie := range tries {
@@ -50,10 +82,12 @@ func TestExactMatchSearch(t *testing.T) {
 			id, found := (*trie).ExactMatchSearch(key)
 			if !found {
 				t.Error("Not found", key)
+				continue
 			}
 			decode, found := (*trie).DecodeKey(id)
 			if !found {
 				t.Error("Not found", id)
+				continue
 			}
 			if key != decode {
 				t.Error("Expected", key, "got", decode)
@@ -120,7 +154,6 @@ func TestPredictiveSearch(t *testing.T) {
 		if len(results) != 3 {
 			t.Error(results)
 		}
-
 		results = (*trie).PredictiveSearch("ab", 1)
 		if len(results) != 1 {
 			t.Error(results)
@@ -141,26 +174,26 @@ func TestPredictiveSearch(t *testing.T) {
 }
 
 func TestDecodeKey(t *testing.T) {
-    builder := NewTrieBuilder()
-    keyList := []string{
-        "bbc",
-        "able",
-        "abc",
-        "abcde",
-        "canon",
-    }
-    trie1, _ := builder.Build(keyList, true)
-    trie2, _ := builder.Build(keyList, false)
-    tries := []*Trie{&trie1, &trie2}
+	builder := NewTrieBuilder()
+	keyList := []string{
+		"bbc",
+		"able",
+		"abc",
+		"abcde",
+		"canon",
+	}
+	trie1, _ := builder.Build(keyList, true)
+	trie2, _ := builder.Build(keyList, false)
+	tries := []*Trie{&trie1, &trie2}
 
-    for _, trie := range tries {
+	for _, trie := range tries {
 		for i := 0; i < len(keyList); i++ {
 			key, found := (*trie).DecodeKey(uint64(i))
 			if !found {
-				t.Error("Not found", key, i);
+				t.Error("Not found", key, i)
 			}
 		}
-		id := uint64(len(keyList)+1)
+		id := uint64(len(keyList) + 1)
 		key, found := (*trie).DecodeKey(id)
 		if key != "" || found {
 			t.Error("earch error for key that does not exist in the trie.", id)
@@ -208,4 +241,18 @@ func TestMarshalBinary(t *testing.T) {
 	if err == nil || err != ErrorInvalidFormat {
 		t.Error()
 	}
+}
+
+func randStr(strSize int) string {
+
+	var dictionary string
+
+	dictionary = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+	var bytes = make([]byte, strSize)
+	rand.Read(bytes)
+	for k, v := range bytes {
+		bytes[k] = dictionary[v%byte(len(dictionary))]
+	}
+	return string(bytes)
 }

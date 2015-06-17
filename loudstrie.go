@@ -135,7 +135,7 @@ func (trie *TrieData) ExactMatchSearch(key string) (uint64, bool) {
 	keyLen := uint64(len(key))
 	for keyPos <= keyLen {
 		id, canTraverse := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
-		if keyPos == keyLen+1 {
+		if keyPos == keyLen+1 && id != NotFound {
 			return id, true
 		}
 		if !canTraverse {
@@ -239,13 +239,11 @@ func (trie *TrieData) Traverse(key string, keyLen uint64, nodePos *uint64, zeros
 	} else if ok, _ := trie.terminal.Get(ones); ok {
 		id, _ = trie.terminal.Rank1(ones)
 	}
-
 	if *keyPos < keyLen {
 		trie.getChild(key[*keyPos], nodePos, zeros)
 	} else {
 		*nodePos = NotFound
 	}
-
 	*keyPos++
 
 	if *nodePos == NotFound {
