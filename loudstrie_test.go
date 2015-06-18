@@ -94,6 +94,12 @@ func TestExactMatchSearch(t *testing.T) {
 				t.Error("Search error for key that does not exist in the trie.", shortKey, id)
 			}
 
+			nearlyKey := shortKey + " "
+			id, found = (*trie).ExactMatchSearch(nearlyKey)
+			if found {
+				t.Error("Search error for key that does not exist in the trie.", nearlyKey, id)
+			}
+
 			notExistKey := key + " not exists. "
 			id, found = (*trie).ExactMatchSearch(notExistKey)
 			if found {
