@@ -231,10 +231,20 @@ func TestMarshalBinary(t *testing.T) {
 		}
 	}
 
+	triebin, _ := trie1.MarshalBinary()
+
 	var buf []byte
 	_, err := NewTrieFromBinary(buf)
 	if err == nil || err != ErrorInvalidFormat {
 		t.Error()
+	}
+
+	for i := 1; i < len(triebin) - 1; i++ {
+		buf = triebin[0:i]
+		_, err = NewTrieFromBinary(buf)
+		if err == nil || err != ErrorInvalidFormat {
+			t.Error()
+		}
 	}
 }
 
