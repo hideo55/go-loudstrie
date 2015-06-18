@@ -87,10 +87,18 @@ func TestExactMatchSearch(t *testing.T) {
 			if key != decode {
 				t.Error("Expected", key, "got", decode)
 			}
-		}
-		id, found := (*trie).ExactMatchSearch("rancho santa margarita ")
-		if found {
-			t.Error("Search error for key that does not exist in the trie.", id)
+
+			shortKey := string(key[0 : len(key)-1])
+			id, found = (*trie).ExactMatchSearch(shortKey)
+			if found {
+				t.Error("Search error for key that does not exist in the trie.", shortKey, id)
+			}
+
+			notExistKey := key + " not exists. "
+			id, found = (*trie).ExactMatchSearch(notExistKey)
+			if found {
+				t.Error("Search error for key that does not exist in the trie.", notExistKey, id)
+			}
 		}
 	}
 }
@@ -170,13 +178,7 @@ func TestPredictiveSearch(t *testing.T) {
 
 func TestDecodeKey(t *testing.T) {
 	builder := NewTrieBuilder()
-	keyList := []string{
-		"bbc",
-		"able",
-		"abc",
-		"abcde",
-		"canon",
-	}
+	keyList := genKeyList(200, 100)
 	trie1, _ := builder.Build(keyList, true)
 	trie2, _ := builder.Build(keyList, false)
 	tries := []*Trie{&trie1, &trie2}
@@ -198,13 +200,7 @@ func TestDecodeKey(t *testing.T) {
 
 func TestMarshalBinary(t *testing.T) {
 	builder := NewTrieBuilder()
-	keyList := []string{
-		"bbc",
-		"able",
-		"abc",
-		"abcde",
-		"canon",
-	}
+	keyList := genKeyList(1000, 100)
 	trie1, _ := builder.Build(keyList, true)
 	trie2, _ := builder.Build(keyList, false)
 	tries := []*Trie{&trie1, &trie2}
@@ -239,7 +235,7 @@ func TestMarshalBinary(t *testing.T) {
 		t.Error()
 	}
 
-	for i := 1; i < len(triebin) - 1; i++ {
+	for i := 1; i < len(triebin)-1; i++ {
 		buf = triebin[0:i]
 		_, err = NewTrieFromBinary(buf)
 		if err == nil || err != ErrorInvalidFormat {

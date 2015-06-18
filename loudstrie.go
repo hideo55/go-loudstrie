@@ -274,12 +274,7 @@ func (trie *TrieData) getChild(c byte, pos *uint64, zeros *uint64) {
 			break
 		}
 		if c == trie.edges[*zeros-uint64(2)] {
-			var err error
-			*pos, err = trie.louds.Select1(*zeros - uint64(1))
-			if err != nil {
-				*pos = NotFound
-				break
-			}
+			*pos, _ = trie.louds.Select1(*zeros - uint64(1))
 			*pos++
 			*zeros = *pos - *zeros + uint64(1)
 			break
