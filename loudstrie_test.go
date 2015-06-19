@@ -208,14 +208,15 @@ func TestMarshalBinary(t *testing.T) {
 	builder := NewTrieBuilder()
 	keyList := genKeyList(1000, 100)
 	trie1, _ := builder.Build(keyList, true)
-	trie2, _ := builder.Build(keyList, false)
-	tries := []*Trie{&trie1, &trie2}
+	//trie2, _ := builder.Build(keyList, false)
+	tries := []*Trie{&trie1, /*&trie2*/}
 
 	for _, trie := range tries {
 		buf, err := (*trie).MarshalBinary()
 		if err != nil {
 			t.Errorf(err.Error())
 		}
+		t.Log(len(buf))
 		newtrie, err := NewTrieFromBinary(buf)
 		if err != nil {
 			t.Errorf(err.Error())
@@ -247,6 +248,21 @@ func TestMarshalBinary(t *testing.T) {
 		if err == nil || err != ErrorInvalidFormat {
 			t.Error()
 		}
+	}
+}
+
+func TestTraverse(t *testing.T) {
+	keyList := genKeyList(100, 10)
+	builder := NewTrieBuilder()
+	trie, _ := builder.Build(keyList, true)
+	key := "test"
+	keyLen := uint64(len(key))
+	nodePos := NotFound
+	zeros := uint64(0)
+	keyPos := uint64(0)
+	id, canTraverse := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos) 
+	if id != NotFound || canTraverse {
+		t.Error()
 	}
 }
 
