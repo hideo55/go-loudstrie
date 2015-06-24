@@ -107,17 +107,13 @@ func TestExactMatchSearch(t *testing.T) {
 			}
 		}
 	}
-}
 
-func TestExactMatchSearchRandomPattern(t *testing.T) {
-	builder := NewTrieBuilder()
-	keyList := genKeyList(10000, 100)
-	trie1, _ := builder.Build(keyList, false)
-	trie2, _ := builder.Build(keyList, true)
-	tries := []*Trie{&trie1, &trie2}
-
-	for _, trie := range tries {
-		for _, key := range keyList {
+	keyList2 := genKeyList(10000, 100)
+	trie3, _ := builder.Build(keyList2, false)
+	trie4, _ := builder.Build(keyList2, true)
+	tries2 := []*Trie{&trie3, &trie4}
+	for _, trie := range tries2 {
+		for _, key := range keyList2 {
 			id, found := (*trie).ExactMatchSearch(key)
 			if !found {
 				t.Error("Not found", key)
@@ -134,7 +130,6 @@ func TestExactMatchSearchRandomPattern(t *testing.T) {
 		}
 	}
 }
-
 
 func TestCommonPrefixSearch(t *testing.T) {
 	builder := NewTrieBuilder()
@@ -211,13 +206,13 @@ func TestPredictiveSearch(t *testing.T) {
 
 func TestDecodeKey(t *testing.T) {
 	builder := NewTrieBuilder()
-	keyList := genKeyList(1000, 100)
+	keyList := genKeyList(10000, 100)
 	trie1, _ := builder.Build(keyList, true)
 	trie2, _ := builder.Build(keyList, false)
 	tries := []*Trie{&trie1, &trie2}
-
+	uniqKeyNum := countUnique(keyList)
 	for _, trie := range tries {
-		for i := 0; i < len(keyList); i++ {
+		for i := 0; i < uniqKeyNum; i++ {
 			key, found := (*trie).DecodeKey(uint64(i))
 			if !found {
 				t.Error("Not found", key, i)
@@ -235,15 +230,14 @@ func TestMarshalBinary(t *testing.T) {
 	builder := NewTrieBuilder()
 	keyList := genKeyList(1000, 100)
 	trie1, _ := builder.Build(keyList, true)
-	//trie2, _ := builder.Build(keyList, false)
-	tries := []*Trie{&trie1 /*&trie2*/}
+	trie2, _ := builder.Build(keyList, false)
+	tries := []*Trie{&trie1, &trie2}
 
 	for _, trie := range tries {
 		buf, err := (*trie).MarshalBinary()
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		t.Log(len(buf))
 		newtrie, err := NewTrieFromBinary(buf)
 		if err != nil {
 			t.Errorf(err.Error())

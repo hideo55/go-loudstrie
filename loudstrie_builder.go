@@ -132,7 +132,7 @@ func (builder *TrieBuilderData) Build(keyList []string, useTailTrie bool) (Trie,
 	if useTailTrie {
 		builder.buildTailTrie()
 	}
-
+	builder.trie = &TrieData{}
 	return trie, nil
 }
 
