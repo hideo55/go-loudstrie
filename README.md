@@ -15,6 +15,11 @@ Documentation
 
 [API documentation](http://godoc.org/github.com/hideo55/go-loudstrie)
 
+Supported version
+-----------------
+
+Go 1.4 or later
+
 License
 --------
 
