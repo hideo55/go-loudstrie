@@ -211,7 +211,7 @@ func TestPredictiveSearch(t *testing.T) {
 
 func TestDecodeKey(t *testing.T) {
 	builder := NewTrieBuilder()
-	keyList := genKeyList(200, 100)
+	keyList := genKeyList(1000, 100)
 	trie1, _ := builder.Build(keyList, true)
 	trie2, _ := builder.Build(keyList, false)
 	tries := []*Trie{&trie1, &trie2}

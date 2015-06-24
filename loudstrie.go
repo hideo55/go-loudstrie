@@ -260,7 +260,12 @@ func (trie *TrieData) isLeaf(pos uint64) bool {
 
 func (trie *TrieData) getParent(c *byte, pos *uint64, zeros *uint64) {
 	*zeros = *pos - *zeros + uint64(1)
-	*pos, _ = trie.louds.Select0(*zeros - uint64(1))
+	var err error
+	*pos, err = trie.louds.Select0(*zeros - uint64(1))
+	if err != nil {
+		*pos = 0
+		return
+	}
 	if *zeros < uint64(2) {
 		return
 	}
