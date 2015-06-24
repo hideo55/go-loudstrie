@@ -109,6 +109,33 @@ func TestExactMatchSearch(t *testing.T) {
 	}
 }
 
+func TestExactMatchSearchRandomPattern(t *testing.T) {
+	builder := NewTrieBuilder()
+	keyList := genKeyList(10000, 100)
+	trie1, _ := builder.Build(keyList, false)
+	trie2, _ := builder.Build(keyList, true)
+	tries := []*Trie{&trie1, &trie2}
+
+	for _, trie := range tries {
+		for _, key := range keyList {
+			id, found := (*trie).ExactMatchSearch(key)
+			if !found {
+				t.Error("Not found", key)
+				continue
+			}
+			decode, found := (*trie).DecodeKey(id)
+			if !found {
+				t.Error("Not found", id)
+				continue
+			}
+			if key != decode {
+				t.Error("Expected", key, "got", decode)
+			}
+		}
+	}
+}
+
+
 func TestCommonPrefixSearch(t *testing.T) {
 	builder := NewTrieBuilder()
 	keyList := []string{
@@ -209,7 +236,7 @@ func TestMarshalBinary(t *testing.T) {
 	keyList := genKeyList(1000, 100)
 	trie1, _ := builder.Build(keyList, true)
 	//trie2, _ := builder.Build(keyList, false)
-	tries := []*Trie{&trie1, /*&trie2*/}
+	tries := []*Trie{&trie1 /*&trie2*/}
 
 	for _, trie := range tries {
 		buf, err := (*trie).MarshalBinary()
@@ -260,7 +287,7 @@ func TestTraverse(t *testing.T) {
 	nodePos := NotFound
 	zeros := uint64(0)
 	keyPos := uint64(0)
-	id, canTraverse := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos) 
+	id, canTraverse := trie.Traverse(key, keyLen, &nodePos, &zeros, &keyPos)
 	if id != NotFound || canTraverse {
 		t.Error()
 	}
