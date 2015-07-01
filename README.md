@@ -17,6 +17,43 @@ This package can be installed with the go get command:
 
     go get github.com/hideo55/go-loudstrie
 
+Usage
+------
+
+```go
+import (
+    "fmt"
+
+    "github.com/hideo55/go-loudstrie"
+)
+
+func main() {
+    builder := loudstrie.NewTrieBuilder()
+    keyList := []string{
+        "bbc",
+        "able",
+        "abc",
+        "abcde",
+        "can",
+    }
+
+    trie, err := builder.Build(keyList, true)
+    if err != nil {
+        // Failed to build trie.
+    }
+
+    // Common prefix search
+    result := trie.CommonPrefixSearch("ab", 0)
+    for _, item := range result {
+        // item has two menbers, ID and Length.
+        // ID: ID of the key.
+        // Length: Length of the key string.
+        key, _ := trie.DecodeKey(item.ID)
+        fmt.Printf("ID:%d, key:%s, len:%d\n", item.ID, key, item.Length)
+    }
+}
+```
+
 Documentation
 -------------
 
