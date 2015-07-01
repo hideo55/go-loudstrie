@@ -10,6 +10,13 @@ Description
 
 LOUDS(Level-Order Unary Degree Sequence) Trie implementation for Go
 
+Installation
+------------
+
+This package can be installed with the go get command:
+
+    go get github.com/hideo55/go-loudstrie
+
 Documentation
 -------------
 
