@@ -7,10 +7,9 @@ import (
 )
 
 func TestBuild(t *testing.T) {
-	builder := NewTrieBuilder()
 	keyList := genKeyList(1000, 100)
 
-	trie, err := builder.Build(keyList, true)
+	trie, err := NewTrie(keyList, true)
 	if err != nil {
 		t.Error("Build error")
 	}
@@ -18,7 +17,7 @@ func TestBuild(t *testing.T) {
 		t.Error("")
 	}
 
-	trie, err = builder.Build(keyList, false)
+	trie, err = NewTrie(keyList, false)
 	if err != nil {
 		t.Error("Build error")
 	}
@@ -28,7 +27,6 @@ func TestBuild(t *testing.T) {
 }
 
 func TestExactMatchSearch(t *testing.T) {
-	builder := NewTrieBuilder()
 	keyList := []string{
 		"bbc",
 		"able",
@@ -68,8 +66,8 @@ func TestExactMatchSearch(t *testing.T) {
 		"Zulu",
 		"Line",
 	}
-	trie1, _ := builder.Build(keyList, false)
-	trie2, _ := builder.Build(keyList, true)
+	trie1, _ := NewTrie(keyList, false)
+	trie2, _ := NewTrie(keyList, true)
 	tries := []*Trie{&trie1, &trie2}
 
 	for _, trie := range tries {
@@ -109,8 +107,8 @@ func TestExactMatchSearch(t *testing.T) {
 	}
 
 	keyList2 := genKeyList(10000, 100)
-	trie3, _ := builder.Build(keyList2, false)
-	trie4, _ := builder.Build(keyList2, true)
+	trie3, _ := NewTrie(keyList2, false)
+	trie4, _ := NewTrie(keyList2, true)
 	tries2 := []*Trie{&trie3, &trie4}
 	for _, trie := range tries2 {
 		for _, key := range keyList2 {
@@ -132,7 +130,6 @@ func TestExactMatchSearch(t *testing.T) {
 }
 
 func TestCommonPrefixSearch(t *testing.T) {
-	builder := NewTrieBuilder()
 	keyList := []string{
 		"bbc",
 		"able",
@@ -141,8 +138,8 @@ func TestCommonPrefixSearch(t *testing.T) {
 		"can",
 	}
 
-	trie1, _ := builder.Build(keyList, true)
-	trie2, _ := builder.Build(keyList, false)
+	trie1, _ := NewTrie(keyList, true)
+	trie2, _ := NewTrie(keyList, false)
 	tries := []*Trie{&trie1, &trie2}
 
 	for _, trie := range tries {
@@ -168,7 +165,6 @@ func TestCommonPrefixSearch(t *testing.T) {
 }
 
 func TestPredictiveSearch(t *testing.T) {
-	builder := NewTrieBuilder()
 	keyList := []string{
 		"bbc",
 		"able",
@@ -176,8 +172,8 @@ func TestPredictiveSearch(t *testing.T) {
 		"abcde",
 		"can",
 	}
-	trie1, _ := builder.Build(keyList, true)
-	trie2, _ := builder.Build(keyList, false)
+	trie1, _ := NewTrie(keyList, true)
+	trie2, _ := NewTrie(keyList, false)
 	tries := []*Trie{&trie1, &trie2}
 
 	for _, trie := range tries {
@@ -205,10 +201,9 @@ func TestPredictiveSearch(t *testing.T) {
 }
 
 func TestDecodeKey(t *testing.T) {
-	builder := NewTrieBuilder()
 	keyList := genKeyList(10000, 100)
-	trie1, _ := builder.Build(keyList, true)
-	trie2, _ := builder.Build(keyList, false)
+	trie1, _ := NewTrie(keyList, true)
+	trie2, _ := NewTrie(keyList, false)
 	tries := []*Trie{&trie1, &trie2}
 	uniqKeyNum := countUnique(keyList)
 	for _, trie := range tries {
@@ -227,10 +222,9 @@ func TestDecodeKey(t *testing.T) {
 }
 
 func TestMarshalBinary(t *testing.T) {
-	builder := NewTrieBuilder()
 	keyList := genKeyList(1000, 100)
-	trie1, _ := builder.Build(keyList, true)
-	trie2, _ := builder.Build(keyList, false)
+	trie1, _ := NewTrie(keyList, true)
+	trie2, _ := NewTrie(keyList, false)
 	tries := []*Trie{&trie1, &trie2}
 
 	for _, trie := range tries {
@@ -274,8 +268,7 @@ func TestMarshalBinary(t *testing.T) {
 
 func TestTraverse(t *testing.T) {
 	keyList := genKeyList(100, 10)
-	builder := NewTrieBuilder()
-	trie, _ := builder.Build(keyList, true)
+	trie, _ := NewTrie(keyList, true)
 	key := "test"
 	keyLen := uint64(len(key))
 	nodePos := NotFound

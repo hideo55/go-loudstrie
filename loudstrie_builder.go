@@ -28,12 +28,12 @@ type rangeNode struct {
 }
 
 /*
-NewTrieBuilder returns new LOUDS Trie Builder
+NewTrie returns new LOUDS Trie 
 */
-func NewTrieBuilder() TrieBuilder {
+func NewTrie(keyList []string, useTailTrie bool) (Trie, error) {
 	builder := &TrieBuilderData{}
 	builder.trie = &TrieData{}
-	return builder
+	return builder.Build(keyList, useTailTrie)
 }
 
 func lg2(x uint64) uint64 {
@@ -138,14 +138,13 @@ func (builder *TrieBuilderData) Build(keyList []string, useTailTrie bool) (Trie,
 
 func (builder *TrieBuilderData) buildTailTrie() {
 	origTails := builder.trie.vtails
-	vtailTrieBuilder := NewTrieBuilder()
 	keyList := make([]string, len(origTails))
 	for tailIdx, tail := range origTails {
 		keyList[tailIdx] = reverseString(tail)
 	}
 	origKeyList := make([]string, len(origTails))
 	copy(origKeyList, keyList)
-	tailTrie, _ := vtailTrieBuilder.Build(keyList, false)
+	tailTrie, _ := NewTrie(keyList, false)
 	builder.trie.tailTrie = tailTrie
 	builder.trie.tailIDSize = lg2(tailTrie.GetNumOfKeys())
 	tailIDBuilder := sbvector.NewVectorBuilder()

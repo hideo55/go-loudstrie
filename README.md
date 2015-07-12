@@ -28,7 +28,6 @@ import (
 )
 
 func main() {
-    builder := loudstrie.NewTrieBuilder()
     keyList := []string{
         "bbc",
         "able",
@@ -37,7 +36,7 @@ func main() {
         "can",
     }
 
-    trie, err := builder.Build(keyList, true)
+    trie, err := NewTrie(keyList, true)
     if err != nil {
         // Failed to build trie.
     }

@@ -9,7 +9,6 @@ Synopsis
 	)
 
 	func example() {
-		builder := loudstrie.NewTrieBuilder()
 		keyList := []string{
 			"bbc",
 			"able",
@@ -18,7 +17,7 @@ Synopsis
 			"can",
 		}
 
-		trie, err := builder.Build(keyList, false)
+		trie, err := loudstrie.NewTrie(keyList, false)
 		if err != nil {
 			// Failed to build trie.
 		}
