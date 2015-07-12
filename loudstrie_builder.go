@@ -8,16 +8,16 @@ import (
 )
 
 /*
-TrieBuilderData holds information of LOUDS Trie Builder
+trieBuilderData holds information of LOUDS Trie Builder
 */
-type TrieBuilderData struct {
+type trieBuilderData struct {
 	trie *TrieData
 }
 
 /*
-TrieBuilder is interface of LOUDS Trie Builder
+trieBuilder is interface of LOUDS Trie Builder
 */
-type TrieBuilder interface {
+type trieBuilder interface {
 	Build(keyList []string, useTailTrie bool) (Trie, error)
 	buildTailTrie()
 }
@@ -31,7 +31,7 @@ type rangeNode struct {
 NewTrie returns new LOUDS Trie 
 */
 func NewTrie(keyList []string, useTailTrie bool) (Trie, error) {
-	builder := &TrieBuilderData{}
+	builder := &trieBuilderData{}
 	builder.trie = &TrieData{}
 	return builder.Build(keyList, useTailTrie)
 }
@@ -48,7 +48,7 @@ func lg2(x uint64) uint64 {
 Build builds LOUDS Trie from keyList.
 If useTailTrie is true, compress TAIL array.
 */
-func (builder *TrieBuilderData) Build(keyList []string, useTailTrie bool) (Trie, error) {
+func (builder *trieBuilderData) Build(keyList []string, useTailTrie bool) (Trie, error) {
 	trie := builder.trie
 	sort.Strings(keyList)
 	keyList = removeDuplicates(keyList)
@@ -136,7 +136,7 @@ func (builder *TrieBuilderData) Build(keyList []string, useTailTrie bool) (Trie,
 	return trie, nil
 }
 
-func (builder *TrieBuilderData) buildTailTrie() {
+func (builder *trieBuilderData) buildTailTrie() {
 	origTails := builder.trie.vtails
 	keyList := make([]string, len(origTails))
 	for tailIdx, tail := range origTails {
