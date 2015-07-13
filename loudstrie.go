@@ -23,12 +23,13 @@ Synopsis
 		}
 
 		// Common prefix search
-		result := trie.CommonPrefixSearch("ab", 0)
+		searchKey := "abcde"
+		result := trie.CommonPrefixSearch(searchkey, 0)
 		for _, item := range result {
 			// item has two menbers, ID and Length.
 			// ID: ID of the key.
 			// Length: Length of the key string.
-			key, _ := trie.DecodeKey(item.ID)
+			key, _ := trie.DecodeKey(item.ID)// key == searchKey[:item.Length]
 			fmt.Printf("ID:%d, key:%s, len:%d\n", item.ID, key, item.Length)
 		}
 
