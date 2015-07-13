@@ -36,7 +36,7 @@ func main() {
         "can",
     }
 
-    trie, err := NewTrie(keyList, true)
+    trie, err := loudstrie.NewTrie(keyList, true)
     if err != nil {
         // Failed to build trie.
     }
